@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login proprietari – B&Brother’s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner fade-in">
+    <a href="index.html" class="logo">
+      <img src="logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+      <div class="logo-text">
+        <span class="logo-title">B&Brother’s</span>
+        <span class="logo-subtitle">Gestione affitti brevi a Roma</span>
+      </div>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">Home</a>
+        <a href="proprietari.html" class="nav-link">Per i proprietari</a>
+        <a href="ospiti.html" class="nav-link">Per gli ospiti</a>
+        <a href="alloggi.html" class="nav-link">Alloggi</a>
+        <a href="come-lavoriamo.html" class="nav-link">Come lavoriamo</a>
+        <a href="chi-siamo.html" class="nav-link">Chi siamo</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contatti.html" class="nav-link">Contatti</a>
+        <a href="login.html" class="nav-link nav-link-active">Area proprietari</a>
+        
+    </nav>
+    <a href="https://wa.me/393345071226" class="btn btn-whatsapp">WhatsApp</a>
+  </div>
+</header>
+
+<main>
+
+<section class="page-hero">
+  <div class="container fade-in">
+    <p class="eyebrow">Area proprietari</p>
+    <h1>Accedi per gestire le tue strutture.</h1>
+    <p class="page-hero-subtitle">
+      Da qui puoi creare e aggiornare gli annunci dei tuoi alloggi e caricare le foto.
+    </p>
+  </div>
+</section>
+
+<main class="section section-light">
+  <div class="container two-cols">
+    <div>
+      <h2>Accesso proprietari</h2>
+      <p>Inserisci email e password per accedere.</p>
+
+      <form id="login-form" class="contact-form">
+        <label>
+          Email
+          <input type="email" id="email" required />
+        </label>
+        <label>
+          Password
+          <input type="password" id="password" required />
+        </label>
+        <button type="button" id="btn-login" class="btn btn-primary btn-full">Login</button>
+        <button type="button" id="btn-signup" class="btn btn-outline btn-full">Registrati</button>
+      </form>
+
+      <p id="auth-message" class="small-label"></p>
+    </div>
+  </div>
+</main>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
+    <p>WhatsApp: +39 334 507 1226 · Email: a.paolino0104@gmail.com</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
+
+<script>
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+  const msg = document.getElementById("auth-message");
+
+  document.getElementById("btn-login").addEventListener("click", async () => {
+    msg.textContent = "Accesso in corso...";
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: emailInput.value,
+      password: passwordInput.value,
+    });
+    if (error) {
+      msg.textContent = "Errore login: " + error.message;
+      return;
+    }
+    window.location.href = "area-proprietari.html";
+  });
+
+  document.getElementById("btn-signup").addEventListener("click", async () => {
+    msg.textContent = "Registrazione in corso...";
+    const { data, error } = await supabase.auth.signUp({
+      email: emailInput.value,
+      password: passwordInput.value,
+    });
+    if (error) {
+      msg.textContent = "Errore registrazione: " + error.message;
+      return;
+    }
+    msg.textContent = "Registrato! Controlla la mail per confermare l'account.";
+  });
+</script>
+
+</body>
+</html>

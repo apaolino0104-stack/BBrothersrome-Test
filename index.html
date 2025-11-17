@@ -1,34 +1,197 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
+  <title>B&Brother’s – Gestione affitti brevi a Roma</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>B&Brother’s • Property Management Roma</title>
-  <meta name="description" content="B&Brother’s: gestione completa per affitti brevi a Roma e Castelli Romani. Valutazione gratuita, avvio in 72h, primo mese senza vincoli." />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body class="bg-gray-50 text-gray-900">
-  <header class="bg-gray-900 text-white p-8 text-center">
-    <h1 class="text-3xl font-bold">B&Brother’s • Property Management Roma</h1>
-    <p class="mt-2">Il servizio più completo per i proprietari a Roma</p>
-    <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-      <a href="brochure.pdf" target="_blank" class="bg-white text-gray-900 px-5 py-3 rounded-xl font-medium">📄 Scarica la brochure (PDF)</a>
-      <a href="#" class="bg-indigo-500 text-white px-5 py-3 rounded-xl font-medium">💬 Parla con noi su WhatsApp</a>
+<body>
+<header class="site-header">
+  <div class="container header-inner fade-in">
+    <a href="index.html" class="logo">
+      <img src="logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+      <div class="logo-text">
+        <span class="logo-title">B&Brother’s</span>
+        <span class="logo-subtitle">Gestione affitti brevi a Roma</span>
+      </div>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link nav-link-active">Home</a>
+        <a href="proprietari.html" class="nav-link">Per i proprietari</a>
+        <a href="ospiti.html" class="nav-link">Per gli ospiti</a>
+        <a href="alloggi.html" class="nav-link">Alloggi</a>
+        <a href="come-lavoriamo.html" class="nav-link">Come lavoriamo</a>
+        <a href="chi-siamo.html" class="nav-link">Chi siamo</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contatti.html" class="nav-link">Contatti</a>
+        <a href="login.html" class="nav-link">Area proprietari</a>
+        
+    </nav>
+    <a href="https://wa.me/393345071226" class="btn btn-whatsapp">WhatsApp</a>
+  </div>
+</header>
+
+<main>
+
+<section class="hero">
+  <div class="container hero-inner">
+    <div class="hero-text fade-in delay-1">
+      <p class="eyebrow">Affitti brevi · Roma</p>
+      <h1>Gestione completa dei tuoi affitti brevi, senza pensieri.</h1>
+      <p class="hero-subtitle">
+        B&Brother’s trasforma il tuo appartamento in una rendita costante. 
+        Ci occupiamo noi di annunci, ospiti e burocrazia. Tu controlli i risultati, incassi e ti rilassi.
+      </p>
+      <div class="hero-cta">
+        <a href="proprietari.html" class="btn btn-primary">Sono un proprietario</a>
+        <a href="alloggi.html" class="btn btn-ghost">Cerco un alloggio</a>
+      </div>
+      <div class="hero-badges">
+        <span>Gestione completa</span>
+        <span>Massima occupazione</span>
+        <span>Zero pensieri</span>
+      </div>
     </div>
-  </header>
-  <main class="max-w-3xl mx-auto p-6">
-    <h2 class="text-xl font-semibold">Perché scegliere B&Brother’s</h2>
-    <ul class="list-disc ml-6 mt-3 space-y-1">
-      <li>Gestione professionale su Booking & Airbnb</li>
-      <li>Sito dedicato con prenotazioni dirette</li>
-      <li>Google Ads & Maps per più visibilità</li>
-      <li>Pratiche burocratiche (Alloggiati Web, CIN, imposta soggiorno)</li>
-      <li>Messaggi ospiti, check-in/out e assistenza</li>
-      <li>Primo mese senza vincoli</li>
-    </ul>
-  </main>
-  <footer class="text-center text-sm text-gray-500 p-6">
-    © <script>document.write(new Date().getFullYear())</script> B&Brother’s • Roma & Castelli Romani
-  </footer>
+    <div class="hero-card fade-in delay-2 tilt-on-hover">
+      <h2>Perché B&Brother’s?</h2>
+      <ul>
+        <li>Strategia prezzi dinamici su più portali (OTA)</li>
+        <li>Comunicazione ospiti e check-in gestiti per te</li>
+        <li>Report mensili chiari e trasparenti</li>
+      </ul>
+      <a href="contatti.html" class="hero-card-cta">Parla direttamente con Alessio →</a>
+    </div>
+  </div>
+</section>
+
+<section class="section section-light">
+  <div class="container two-cols">
+    <div class="fade-in delay-1">
+      <h2>Per i proprietari</h2>
+      <p>
+        Sei stanco di gestire messaggi, pulizie, check-in e problemi all’ultimo minuto?
+        Con B&Brother’s hai un unico referente che si occupa di tutto. 
+        Tu mantieni il controllo sull’immobile, noi pensiamo alla gestione operativa.
+      </p>
+      <ul class="check-list">
+        <li>Valutazione gratuita del potenziale del tuo immobile</li>
+        <li>Consulenza su arredi e set-up fotografico</li>
+        <li>Pubblicazione annunci e ottimizzazione costante</li>
+        <li>Gestione prezzi basata sui dati, non a caso</li>
+      </ul>
+      <a href="proprietari.html" class="link-arrow">Scopri il servizio proprietari</a>
+    </div>
+    <div class="fade-in delay-2">
+      <h2>Per gli ospiti</h2>
+      <p>
+        Appartamenti selezionati in quartieri strategici di Roma, ideali per lavoro, studio o vacanza.
+        Pulizia professionale, Wi-Fi veloce e assistenza dedicata: l’esperienza di un hotel, 
+        con la libertà di una casa tutta per te.
+      </p>
+      <ul class="check-list">
+        <li>Self check-in o accoglienza personalizzata</li>
+        <li>Alloggi curati nei dettagli</li>
+        <li>Supporto 7/7 via WhatsApp</li>
+      </ul>
+      <a href="ospiti.html" class="link-arrow">Scopri i servizi per gli ospiti</a>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt">
+  <div class="container metrics-section">
+    <div class="metrics-text fade-in delay-1">
+      <h2>Occupazione media dei nostri alloggi</h2>
+      <p>
+        Negli ultimi 12 mesi i nostri alloggi hanno registrato un’occupazione media dell’<strong>81%</strong>. 
+        Solo il <strong>19%</strong> delle date è rimasto libero: un dato che racconta quanto lavoriamo in modo mirato su prezzi, 
+        visibilità e qualità dell’esperienza per gli ospiti.
+      </p>
+    </div>
+    <div class="kpi-chart fade-in delay-2">
+      <div class="kpi-ring">
+        <div class="kpi-ring-inner">
+          <span class="kpi-value">81%</span>
+          <span class="kpi-label">Occupazione media</span>
+        </div>
+      </div>
+      <div class="kpi-legend">
+        <div class="legend-item">
+          <span class="legend-dot legend-dot-main"></span>
+          <span>81% notti occupate</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot legend-dot-free"></span>
+          <span>19% date libere</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-light">
+  <div class="container">
+    <h2 class="section-title fade-in">I nostri alloggi</h2>
+    <p class="section-subtitle fade-in delay-1">
+      Un portfolio di appartamenti selezionati, in continuo aggiornamento: soluzioni perfette per 
+      coppie, famiglie e viaggi di lavoro.
+    </p>
+    <div class="cards-grid">
+      <article class="listing-card lift-on-hover fade-in delay-1">
+        <div class="listing-badge-row">
+          <span class="badge">Centro storico</span>
+          <span class="badge badge-strong">Fino a 4 ospiti</span>
+        </div>
+        <h3>Piazza Navona Luxury</h3>
+        <p>Elegante appartamento nel cuore di Roma: 2 camere matrimoniali, soggiorno con cucina attrezzata.</p>
+        <ul class="tags">
+          <li>Wi-Fi</li>
+          <li>AC</li>
+          <li>Smart check-in</li>
+        </ul>
+      </article>
+      <article class="listing-card lift-on-hover fade-in delay-2">
+        <div class="listing-badge-row">
+          <span class="badge">Trastevere</span>
+          <span class="badge badge-strong">Fino a 6 ospiti</span>
+        </div>
+        <h3>Trastevere Loft</h3>
+        <p>Loft su due livelli con 3 camere e terrazzo privato, perfetto per famiglie e gruppi di amici.</p>
+        <ul class="tags">
+          <li>Wi-Fi</li>
+          <li>AC</li>
+          <li>Self check-in</li>
+        </ul>
+      </article>
+      <article class="listing-card lift-on-hover fade-in delay-3">
+        <div class="listing-badge-row">
+          <span class="badge">San Pietro</span>
+          <span class="badge badge-strong">Fino a 2 ospiti</span>
+        </div>
+        <h3>San Pietro Cozy</h3>
+        <p>Bilocale curato a pochi minuti dal Vaticano, ideale per viaggi di coppia o lavoro.</p>
+        <ul class="tags">
+          <li>Wi-Fi</li>
+          <li>AC</li>
+          <li>Balcone</li>
+        </ul>
+      </article>
+    </div>
+    <div class="section-cta-center fade-in delay-3">
+      <a href="alloggi.html" class="btn btn-outline">Vedi tutti gli alloggi</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
+    <p>WhatsApp: +39 334 507 1226 · Email: a.paolino0104@gmail.com</p>
+  </div>
+</footer>
+
 </body>
 </html>

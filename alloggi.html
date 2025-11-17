@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Alloggi – B&Brother’s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner fade-in">
+    <a href="index.html" class="logo">
+      <img src="logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+      <div class="logo-text">
+        <span class="logo-title">B&Brother’s</span>
+        <span class="logo-subtitle">Gestione affitti brevi a Roma</span>
+      </div>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">Home</a>
+        <a href="proprietari.html" class="nav-link">Per i proprietari</a>
+        <a href="ospiti.html" class="nav-link">Per gli ospiti</a>
+        <a href="alloggi.html" class="nav-link nav-link-active">Alloggi</a>
+        <a href="come-lavoriamo.html" class="nav-link">Come lavoriamo</a>
+        <a href="chi-siamo.html" class="nav-link">Chi siamo</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contatti.html" class="nav-link">Contatti</a>
+        <a href="login.html" class="nav-link">Area proprietari</a>
+        
+    </nav>
+    <a href="https://wa.me/393345071226" class="btn btn-whatsapp">WhatsApp</a>
+  </div>
+</header>
+
+<main>
+
+<section class="page-hero">
+  <div class="container fade-in">
+    <p class="eyebrow">Alloggi</p>
+    <h1>I nostri appartamenti a Roma</h1>
+    <p class="page-hero-subtitle">
+      Una selezione di alloggi curati, in zone strategiche della città. 
+      Contattaci su WhatsApp per disponibilità e preventivi aggiornati.
+    </p>
+  </div>
+</section>
+
+<section class="section section-light">
+  <div class="container">
+    <div class="filter-bar fade-in delay-1">
+      <span class="filter-label">Filtra per:</span>
+      <select class="filter-select">
+        <option>Tutte le zone</option>
+        <option>Centro storico</option>
+        <option>Trastevere</option>
+        <option>San Pietro</option>
+        <option>Monti</option>
+      </select>
+      <select class="filter-select">
+        <option>Numero ospiti</option>
+        <option>Fino a 2</option>
+        <option>Fino a 4</option>
+        <option>Fino a 6+</option>
+      </select>
+      <select class="filter-select">
+        <option>Tipologia</option>
+        <option>Loft</option>
+        <option>Family</option>
+        <option>Luxury</option>
+      </select>
+    </div>
+
+    <div id="public-properties" class="cards-grid listings-grid">
+      <!-- riempito da Supabase -->
+    </div>
+
+    <p class="note fade-in delay-3" id="public-note"></p>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
+    <p>WhatsApp: +39 334 507 1226 · Email: a.paolino0104@gmail.com</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
+
+<script>
+  async function loadPublicProperties() {
+    const listEl = document.getElementById("public-properties");
+    const noteEl = document.getElementById("public-note");
+    if (!listEl) return;
+    listEl.innerHTML = "<p>Caricamento alloggi...</p>";
+
+    const { data, error } = await supabase
+      .from("properties")
+      .select("*")
+      .eq("status", "published")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      listEl.innerHTML = "<p>Errore nel caricamento degli alloggi.</p>";
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      listEl.innerHTML = "<p>Nessun alloggio pubblicato al momento.</p>";
+      if (noteEl) noteEl.textContent = "Gli alloggi saranno visibili man mano che i proprietari li pubblicano.";
+      return;
+    }
+
+    listEl.innerHTML = data
+      .map((p) => `
+        <article class="listing-card listing-large lift-on-hover fade-in">
+          <div class="listing-badge-row">
+            <span class="badge">${p.zone || "Roma"}</span>
+            <span class="badge badge-strong">${p.guests || "?"} ospiti</span>
+          </div>
+          <h2>${p.title}</h2>
+          <p>${p.short_description || ""}</p>
+          <ul class="tags">
+            <li>${p.base_price ? p.base_price + " €/notte" : "Prezzo su richiesta"}</li>
+          </ul>
+          <div class="listing-footer">
+            <span class="rating">Annuncio gestito da B&Brother’s</span>
+            <a href="https://wa.me/393345071226?text=Ciao%2C%20vorrei%20info%20su%20${encodeURIComponent(p.title)}" class="btn btn-outline-sm">Richiedi disponibilità</a>
+          </div>
+        </article>
+      `)
+      .join("");
+  }
+
+  loadPublicProperties();
+</script>
+
+</body>
+</html>
