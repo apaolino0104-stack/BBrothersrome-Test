@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Alloggio – B&Brother’s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner fade-in">
+    <a href="index.html" class="logo">
+      <img src="logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+      <div class="logo-text">
+        <span class="logo-title">B&Brother’s</span>
+        <span class="logo-subtitle">Gestione affitti brevi a Roma</span>
+      </div>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">Home</a>
+        <a href="proprietari.html" class="nav-link">Per i proprietari</a>
+        <a href="ospiti.html" class="nav-link">Per gli ospiti</a>
+        <a href="alloggi.html" class="nav-link nav-link-active">Alloggi</a>
+        <a href="come-lavoriamo.html" class="nav-link">Come lavoriamo</a>
+        <a href="chi-siamo.html" class="nav-link">Chi siamo</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contatti.html" class="nav-link">Contatti</a>
+        <a href="login.html" class="nav-link">Area proprietari</a>
+
+    </nav>
+    <a href="https://wa.me/393345071226" class="btn btn-whatsapp">WhatsApp</a>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero">
+    <div class="container fade-in">
+      <p class="eyebrow">Scheda alloggio</p>
+      <h1 id="prop-title">Caricamento...</h1>
+      <p class="page-hero-subtitle" id="prop-short"></p>
+      <div class="property-meta" id="prop-meta"></div>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="container">
+      <div id="prop-message" class="note"></div>
+      <div class="property-layout">
+        <div class="property-main">
+          <div id="prop-gallery" class="property-gallery"></div>
+          <div class="property-description">
+            <h2>Descrizione completa</h2>
+            <p id="prop-full"></p>
+          </div>
+        </div>
+        <aside class="property-sidebar">
+          <div class="property-card">
+            <h3>Richiedi disponibilità</h3>
+            <p id="prop-price" class="small-label"></p>
+            <div class="property-actions">
+              <a id="whatsapp-link" href="https://wa.me/393345071226" class="btn btn-primary">Scrivici su WhatsApp</a>
+              <a href="alloggi.html" class="btn btn-outline">Torna agli alloggi</a>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
+    <p>WhatsApp: +39 334 507 1226 · Email: a.paolino0104@gmail.com</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const propertyId = params.get("id");
+  const titleEl = document.getElementById("prop-title");
+  const shortEl = document.getElementById("prop-short");
+  const fullEl = document.getElementById("prop-full");
+  const metaEl = document.getElementById("prop-meta");
+  const galleryEl = document.getElementById("prop-gallery");
+  const messageEl = document.getElementById("prop-message");
+  const priceEl = document.getElementById("prop-price");
+  const whatsappLink = document.getElementById("whatsapp-link");
+
+  if (!propertyId) {
+    titleEl.textContent = "Seleziona un alloggio";
+    shortEl.textContent = "Torna alla pagina Alloggi e clicca su una scheda per vedere i dettagli.";
+    messageEl.innerHTML = "<p>Apri <strong>alloggi.html</strong>, scegli un annuncio pubblicato e verrai portato qui con tutte le informazioni e le foto.</p>";
+  }
+
+  async function loadGallery(property) {
+    galleryEl.innerHTML = "<p>Caricamento foto...</p>";
+    const folderPath = `${property.owner_id}/${property.id}`;
+
+    const photos = [];
+
+    if (property.cover_photo_url) {
+      photos.push({ url: property.cover_photo_url, name: "Foto di copertina" });
+    }
+
+    const { data, error } = await supabase.storage
+      .from("property-photos")
+      .list(folderPath);
+
+    if (error) {
+      console.error(error);
+      galleryEl.innerHTML = "<p>Errore nel caricamento delle foto.</p>";
+      return;
+    }
+
+    data.forEach((file) => {
+      const path = `${folderPath}/${file.name}`;
+      const { data: publicData } = supabase.storage
+        .from("property-photos")
+        .getPublicUrl(path);
+
+      const alreadyAdded = photos.some((ph) => ph.url === publicData.publicUrl);
+      if (!alreadyAdded) {
+        photos.push({ url: publicData.publicUrl, name: file.name });
+      }
+    });
+
+    if (photos.length === 0) {
+      galleryEl.innerHTML = "<p>Il proprietario non ha ancora caricato foto.</p>";
+      return;
+    }
+
+    galleryEl.innerHTML = photos
+      .map(
+        (photo) => `
+        <figure class="property-photo">
+          <img src="${photo.url}" alt="Foto dell'alloggio" loading="lazy" />
+          <figcaption>${photo.name}</figcaption>
+        </figure>
+      `
+      )
+      .join("");
+  }
+
+  async function loadProperty() {
+    if (!propertyId) return;
+    messageEl.textContent = "";
+
+    const { data, error } = await supabase
+      .from("properties")
+      .select("*")
+      .eq("id", propertyId)
+      .single();
+
+    if (error || !data) {
+      messageEl.textContent = "Alloggio non trovato.";
+      titleEl.textContent = "Alloggio non disponibile";
+      return;
+    }
+
+    const property = data;
+    titleEl.textContent = property.title;
+    shortEl.textContent = property.short_description || "";
+    fullEl.textContent = property.full_description || "Il proprietario non ha ancora inserito una descrizione completa.";
+
+    metaEl.innerHTML = `
+      <span class="badge">${property.zone || "Roma"}</span>
+      <span class="badge badge-strong">${property.guests || "?"} ospiti</span>
+      <span class="badge">${property.status === "published" ? "Annuncio online" : "Bozza"}</span>
+    `;
+
+    priceEl.textContent = property.base_price
+      ? `A partire da ${property.base_price} €/notte`
+      : "Prezzo su richiesta";
+
+    whatsappLink.href = `https://wa.me/393345071226?text=${encodeURIComponent(
+      `Ciao, vorrei informazioni sull'alloggio "${property.title}"`
+    )}`;
+
+    loadGallery(property);
+  }
+
+  loadProperty();
+</script>
+
+</body>
+</html>

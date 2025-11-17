@@ -48,6 +48,8 @@
 <section class="section section-light">
   <div class="container">
     <div class="filter-bar fade-in delay-1">
+      <span class="filter-label">Suggerimento:</span>
+      <span class="filter-note">clicca su un alloggio per aprire la scheda completa con tutte le foto e i dettagli.</span>
       <span class="filter-label">Filtra per:</span>
       <select class="filter-select">
         <option>Tutte le zone</option>
@@ -121,7 +123,8 @@
 
     listEl.innerHTML = data
       .map((p) => `
-        <article class="listing-card listing-large lift-on-hover fade-in">
+        <a class="listing-card listing-large listing-link lift-on-hover fade-in" href="property.html?id=${p.id}">
+          ${p.cover_photo_url ? `<img src="${p.cover_photo_url}" alt="Foto di ${p.title}" class="listing-cover" />` : ""}
           <div class="listing-badge-row">
             <span class="badge">${p.zone || "Roma"}</span>
             <span class="badge badge-strong">${p.guests || "?"} ospiti</span>
@@ -133,9 +136,9 @@
           </ul>
           <div class="listing-footer">
             <span class="rating">Annuncio gestito da B&Brother’s</span>
-            <a href="https://wa.me/393345071226?text=Ciao%2C%20vorrei%20info%20su%20${encodeURIComponent(p.title)}" class="btn btn-outline-sm">Richiedi disponibilità</a>
+            <span class="btn btn-outline-sm">Apri la scheda</span>
           </div>
-        </article>
+        </a>
       `)
       .join("");
   }
