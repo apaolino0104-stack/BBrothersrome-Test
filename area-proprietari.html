@@ -35,57 +35,34 @@
     <p class="eyebrow">Area proprietari</p>
     <h1>Le tue strutture</h1>
     <p class="page-hero-subtitle">
-      Qui puoi vedere e creare gli annunci delle tue strutture. In questa prima versione gli annunci vengono salvati come bozze.
+      Gestisci rapidamente gli annunci: rivedi la lista, aggiungi nuove proprietà o entra in modifica completa su una pagina dedicata.
     </p>
   </div>
 </section>
 
 <section class="section section-light">
   <div class="container">
-    <button id="btn-logout" class="btn btn-outline" style="margin: 10px 0;">Logout</button>
+    <div class="dashboard-bar">
+      <div>
+        <p class="small-label">Accesso proprietario</p>
+        <strong id="owner-email">&nbsp;</strong>
+      </div>
+      <div class="dashboard-actions">
+        <a href="area-proprietari-nuova.html" class="btn btn-primary">Aggiungi proprietà</a>
+        <button id="btn-logout" class="btn btn-outline">Logout</button>
+      </div>
+    </div>
 
-    <section style="margin-top: 20px;">
-      <h2>Le tue strutture</h2>
-      <div id="my-properties"></div>
-    </section>
-
-    <hr style="margin: 24px 0;">
-
-    <section>
-      <h2>Nuova struttura (bozza)</h2>
-      <form id="new-property-form" class="contact-form">
-        <label>
-          Titolo
-          <input type="text" id="prop-title" required />
-        </label>
-        <label>
-          Zona
-          <input type="text" id="prop-zone" />
-        </label>
-        <label>
-          Descrizione breve
-          <textarea id="prop-short" rows="2"></textarea>
-        </label>
-        <label>
-          Descrizione completa
-          <textarea id="prop-full" rows="4"></textarea>
-        </label>
-        <label>
-          Posti letto
-          <input type="number" id="prop-guests" />
-        </label>
-        <label>
-          Prezzo base (€/notte)
-          <input type="number" id="prop-price" step="0.01" />
-        </label>
-        <label>
-          Foto dell'alloggio (puoi selezionarne più di una)
-          <input type="file" id="prop-photos" accept="image/*" multiple />
-          <span class="small-label">La prima foto caricata diventa la copertina.</span>
-        </label>
-        <button type="submit" class="btn btn-primary btn-full">Salva struttura (bozza)</button>
-      </form>
-      <p id="prop-message" class="small-label"></p>
+    <section style="margin-top: 14px;">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow" style="color: var(--text-muted);">Portfolio</p>
+          <h2>Le tue strutture</h2>
+          <p class="section-subtitle">Card compatte con stato, zona e copertina. Usa “Modifica” per aprire la pagina di editing completa.</p>
+        </div>
+        <a href="area-proprietari-nuova.html" class="btn btn-primary">+ Aggiungi proprietà</a>
+      </div>
+      <div id="my-properties" class="cards-grid"></div>
     </section>
 
     <hr style="margin: 24px 0;">
@@ -163,20 +140,6 @@
     return data?.publicUrl || null;
   }
 
-  function getStoragePathFromUrl(url) {
-    try {
-      const parsed = new URL(url);
-      const segments = parsed.pathname.split("/").filter(Boolean);
-      const objectIndex = segments.findIndex((s) => s === "object");
-      if (objectIndex !== -1 && segments.length > objectIndex + 2) {
-        return segments.slice(objectIndex + 2).join("/");
-      }
-    } catch (e) {
-      console.warn("Impossibile derivare il path dello storage", e);
-    }
-    return url;
-  }
-
   async function getCurrentUser() {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
@@ -195,6 +158,30 @@
     window.location.href = "login.html";
   });
 
+  async function fetchCoverMap(ids) {
+    if (!ids || ids.length === 0) return {};
+    const { data, error } = await supabase
+      .from("property_photos")
+      .select("*")
+      .in("property_id", ids)
+      .order("is_cover", { ascending: false })
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.warn("Impossibile recuperare le cover", error.message);
+      return {};
+    }
+
+    const map = {};
+    (data || []).forEach((photo) => {
+      if (!map[photo.property_id]) {
+        map[photo.property_id] = photo;
+      }
+    });
+    return map;
+  }
+
   async function loadMyProperties() {
     const listEl = document.getElementById("my-properties");
     listEl.innerHTML = "Caricamento...";
@@ -211,374 +198,50 @@
     }
 
     if (!data || data.length === 0) {
-      listEl.innerHTML = "<p>Non hai ancora strutture.</p>";
+      listEl.innerHTML = `
+        <article class="listing-card">
+          <h3>Nessuna struttura</h3>
+          <p class="section-subtitle">Inizia aggiungendo la tua prima proprietà: copertina, dettagli e pubblicazione.</p>
+          <a class="btn btn-primary" href="area-proprietari-nuova.html">Aggiungi proprietà</a>
+        </article>
+      `;
       return;
     }
 
-    propertiesCache = data;
+    const ids = data.map((p) => p.id);
+    const coverMap = await fetchCoverMap(ids);
 
     listEl.innerHTML = data
-      .map(
-        (p) => `
-        <article class="listing-card">
-          <h3>${p.title}</h3>
-          <p>${p.short_description || ""}</p>
-          <p class="small-label">Zona: ${p.zone || "Roma"}</p>
-          <p class="small-label">Stato: <strong>${p.status}</strong></p>
-          <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="btn btn-ghost" data-edit="${p.id}">Modifica</button>
-          </div>
-        </article>
-      `
-      )
+      .map((p) => {
+        const coverPath = coverMap[p.id]?.path || p.cover_photo_url;
+        const coverUrl = publicUrlFromPath(coverPath) || "";
+        const badge = p.status === "published" ? "badge-strong" : "";
+        return `
+          <article class="listing-card lift-on-hover">
+            ${coverUrl ? `<img src="${coverUrl}" alt="Copertina ${p.title}" class="listing-cover" loading="lazy" />` : ""}
+            <div class="listing-badge-row" style="margin-bottom: 8px;">
+              <span class="badge ${badge}">${p.status || "bozza"}</span>
+              <span class="badge">${p.zone || "Roma"}</span>
+            </div>
+            <h3>${p.title}</h3>
+            <p>${p.short_description || ""}</p>
+            <div class="listing-badge-row" style="margin-top: 10px;">
+              ${p.guests ? `<span class="badge">${p.guests} ospiti</span>` : ""}
+              ${p.base_price ? `<span class="badge">€${p.base_price} / notte</span>` : ""}
+            </div>
+            <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+              <a class="btn btn-outline" href="area-proprietari-modifica.html?id=${p.id}">Modifica</a>
+            </div>
+          </article>
+        `;
+      })
       .join("");
-
-    listEl.querySelectorAll("[data-edit]").forEach((btn) => {
-      btn.addEventListener("click", () => selectProperty(btn.dataset.edit));
-    });
   }
-
-  async function handleNewProperty(e) {
-    e.preventDefault();
-    const msg = document.getElementById("prop-message");
-    msg.textContent = "Salvataggio in corso...";
-
-    const title = document.getElementById("prop-title").value;
-    const zone = document.getElementById("prop-zone").value;
-    const shortDesc = document.getElementById("prop-short").value;
-    const fullDesc = document.getElementById("prop-full").value;
-    const guests = parseInt(document.getElementById("prop-guests").value || "0", 10);
-    const price = parseFloat(document.getElementById("prop-price").value || "0");
-    const photoFiles = Array.from(document.getElementById("prop-photos").files || []);
-
-    const { data: propData, error: propError } = await supabase
-      .from("properties")
-      .insert({
-        owner_id: currentUser.id,
-        title,
-        zone,
-        short_description: shortDesc,
-        full_description: fullDesc,
-        guests,
-        base_price: price,
-        status: "draft"
-      })
-      .select()
-      .single();
-
-    if (propError) {
-      msg.textContent = "Errore salvataggio struttura: " + propError.message;
-      return;
-    }
-
-    if (photoFiles.length > 0) {
-      let coverUrl = null;
-      const failedUploads = [];
-      const folderPath = `properties/${propData.id}`;
-
-      for (let i = 0; i < photoFiles.length; i++) {
-        const file = photoFiles[i];
-        const path = `${folderPath}/${Date.now()}-${i}-${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from(PHOTO_BUCKET)
-          .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
-
-        if (uploadError) {
-          failedUploads.push(`${file.name}: ${uploadError.message}`);
-          continue;
-        }
-
-        const { error: insertError } = await supabase.from("property_photos").insert({
-          property_id: propData.id,
-          path,
-          is_cover: i === 0,
-          sort_order: i,
-        });
-
-        if (insertError) {
-          failedUploads.push(`${file.name}: ${insertError.message}`);
-          continue;
-        }
-
-        if (i === 0) {
-          coverUrl = publicUrlFromPath(path);
-        }
-      }
-
-      if (coverUrl) {
-        await supabase.from("properties").update({ cover_photo_url: coverUrl }).eq("id", propData.id);
-      }
-
-      if (failedUploads.length > 0) {
-        msg.textContent =
-          "Struttura salvata, alcune foto non sono state caricate (controlla i permessi del bucket property-photos su Supabase): " +
-          failedUploads.join("; ");
-      } else {
-        msg.textContent = "Struttura salvata in bozza con foto.";
-      }
-    } else {
-      msg.textContent = "Struttura salvata in bozza.";
-    }
-
-    document.getElementById("new-property-form").reset();
-    loadMyProperties();
-  }
-
-  async function selectProperty(propertyId) {
-    selectedPropertyId = propertyId;
-    const editSection = document.getElementById("edit-section");
-    editSection.style.display = "block";
-
-    const property = propertiesCache.find((p) => p.id === propertyId);
-    if (!property) return;
-
-    document.getElementById("edit-title").value = property.title || "";
-    document.getElementById("edit-zone").value = property.zone || "";
-    document.getElementById("edit-short").value = property.short_description || "";
-    document.getElementById("edit-full").value = property.full_description || "";
-    document.getElementById("edit-guests").value = property.guests || "";
-    document.getElementById("edit-price").value = property.base_price || "";
-    document.getElementById("edit-status").value = property.status || "draft";
-
-    loadExistingPhotos(property);
-  }
-
-  function renderOwnerGallery(gallery, photos, property) {
-    if (photos.length === 0) {
-      gallery.innerHTML = "<p class=\"small-label\">Nessuna foto caricata.</p>";
-      return;
-    }
-
-    const first = photos[0];
-    gallery.innerHTML = `
-      <div class="gallery-viewer">
-        <div class="gallery-main">
-          <img id="owner-main-photo" src="${first.url}" alt="${first.label}" loading="lazy" />
-          <div class="gallery-caption">${first.label}</div>
-        </div>
-        <div class="gallery-thumbs" id="owner-thumbs">
-          ${photos
-            .map(
-              (photo, idx) => `
-                <div class="gallery-thumb ${idx === 0 ? "thumb-active" : ""}" data-idx="${idx}" data-photo-id="${photo.id}" data-photo-path="${photo.path}">
-                  <img src="${photo.url}" alt="Anteprima foto" loading="lazy" />
-                  <div class="thumb-actions">
-                    ${photo.isCover ? "<span class=\"badge\">Copertina</span>" : ""}
-                    <button class="btn btn-ghost btn-small" data-photo-id="${photo.id}" data-photo-path="${photo.path}" type="button">Elimina</button>
-                  </div>
-                </div>
-              `
-            )
-            .join("")}
-        </div>
-      </div>
-    `;
-
-    const mainImg = document.getElementById("owner-main-photo");
-    const caption = gallery.querySelector(".gallery-caption");
-    const thumbs = Array.from(gallery.querySelectorAll(".gallery-thumb"));
-
-    thumbs.forEach((thumb) => {
-      thumb.addEventListener("click", (e) => {
-        const target = e.target;
-        if (target && target.dataset && target.dataset.delete) return;
-        const idx = parseInt(thumb.dataset.idx, 10);
-        const photo = photos[idx];
-        mainImg.src = photo.url;
-        mainImg.alt = photo.label;
-        caption.textContent = photo.label;
-        thumbs.forEach((el) => el.classList.remove("thumb-active"));
-        thumb.classList.add("thumb-active");
-      });
-    });
-
-    gallery.querySelectorAll("[data-photo-id]").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        deletePhoto(property, btn.dataset.photoId, btn.dataset.photoPath);
-      });
-    });
-  }
-
-  async function loadExistingPhotos(property) {
-    const gallery = document.getElementById("edit-photos");
-    gallery.innerHTML = "<p class=\"small-label\">Caricamento foto...</p>";
-    const { data, error } = await supabase
-      .from("property_photos")
-      .select("*")
-      .eq("property_id", property.id)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      gallery.innerHTML =
-        "<p>Errore nel recupero delle foto. Verifica che il bucket property-photos consenta a utenti autenticati di leggere e caricare.</p>";
-      return;
-    }
-
-    const photos = (data || []).map((item) => {
-      const labelName = item.path?.split("/").pop() || "Foto";
-      return {
-        id: item.id,
-        url: publicUrlFromPath(item.path),
-        name: labelName,
-        label: item.is_cover ? "Foto di copertina" : labelName,
-        isCover: item.is_cover,
-        path: item.path,
-      };
-    });
-
-    if (photos.length === 0 && property.cover_photo_url) {
-      photos.push({
-        id: "cover",
-        url: property.cover_photo_url,
-        name: "cover",
-        label: "Foto di copertina",
-        isCover: true,
-        path: getStoragePathFromUrl(property.cover_photo_url),
-      });
-    }
-
-    if (photos.length > 0) {
-      const coverPhoto = photos.find((p) => p.isCover) || photos[0];
-      property.cover_photo_url = coverPhoto.url;
-    }
-
-    renderOwnerGallery(gallery, photos, property);
-  }
-
-  async function deletePhoto(property, photoId, photoPath) {
-    const toDeletePath = photoPath?.startsWith("http") ? getStoragePathFromUrl(photoPath) : photoPath;
-
-    if (toDeletePath) {
-      const { error: storageError } = await supabase.storage.from(PHOTO_BUCKET).remove([toDeletePath]);
-      if (storageError) {
-        alert("Errore nell'eliminazione dallo storage: " + storageError.message);
-        return;
-      }
-    }
-
-    if (photoId && photoId !== "cover") {
-      const { error: dbError } = await supabase.from("property_photos").delete().eq("id", photoId);
-      if (dbError) {
-        alert("Foto rimossa dallo storage ma non dal database: " + dbError.message);
-      }
-    }
-
-    loadExistingPhotos(property);
-  }
-
-  async function handleEditSubmit(e) {
-    e.preventDefault();
-    if (!selectedPropertyId) return;
-    const msg = document.getElementById("edit-message");
-    msg.textContent = "Aggiornamento in corso...";
-
-    const title = document.getElementById("edit-title").value;
-    const zone = document.getElementById("edit-zone").value;
-    const shortDesc = document.getElementById("edit-short").value;
-    const fullDesc = document.getElementById("edit-full").value;
-    const guests = parseInt(document.getElementById("edit-guests").value || "0", 10);
-    const price = parseFloat(document.getElementById("edit-price").value || "0");
-    const status = document.getElementById("edit-status").value;
-    const newPhotos = Array.from(document.getElementById("edit-photos-input").files || []);
-
-    const { error: updateError } = await supabase
-      .from("properties")
-      .update({
-        title,
-        zone,
-        short_description: shortDesc,
-        full_description: fullDesc,
-        guests,
-        base_price: price,
-        status,
-      })
-      .eq("id", selectedPropertyId);
-
-    if (updateError) {
-      msg.textContent = "Errore durante il salvataggio: " + updateError.message;
-      return;
-    }
-
-    if (newPhotos.length > 0) {
-      let coverUrl = null;
-      const failedUploads = [];
-      const { count } = await supabase
-        .from("property_photos")
-        .select("id", { count: "exact", head: true })
-        .eq("property_id", selectedPropertyId);
-      const offset = count || 0;
-
-      await supabase.from("property_photos").update({ is_cover: false }).eq("property_id", selectedPropertyId);
-
-      for (let i = 0; i < newPhotos.length; i++) {
-        const file = newPhotos[i];
-        const path = `properties/${selectedPropertyId}/${Date.now()}-${i}-${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from(PHOTO_BUCKET)
-          .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
-
-        if (uploadError) {
-          failedUploads.push(`${file.name}: ${uploadError.message}`);
-          continue;
-        }
-
-        const { error: insertError } = await supabase.from("property_photos").insert({
-          property_id: selectedPropertyId,
-          path,
-          is_cover: i === 0,
-          sort_order: offset + i,
-        });
-
-        if (insertError) {
-          failedUploads.push(`${file.name}: ${insertError.message}`);
-          continue;
-        }
-
-        if (i === 0) {
-          coverUrl = publicUrlFromPath(path);
-        }
-      }
-
-      if (coverUrl) {
-        await supabase.from("properties").update({ cover_photo_url: coverUrl }).eq("id", selectedPropertyId);
-        const cached = propertiesCache.find((p) => p.id === selectedPropertyId);
-        if (cached) cached.cover_photo_url = coverUrl;
-      }
-
-      if (failedUploads.length > 0) {
-        msg.textContent =
-          "Modifica salvata ma alcune foto non sono state caricate (controlla i permessi del bucket property-photos su Supabase): " +
-          failedUploads.join("; ");
-      }
-    }
-
-    if (!msg.textContent) {
-      msg.textContent = "Annuncio aggiornato.";
-    }
-    document.getElementById("edit-photos-input").value = "";
-    await loadMyProperties();
-
-    const updated = propertiesCache.find((p) => p.id === selectedPropertyId);
-    if (updated) {
-      document.getElementById("edit-title").value = updated.title || "";
-      document.getElementById("edit-zone").value = updated.zone || "";
-      document.getElementById("edit-short").value = updated.short_description || "";
-      document.getElementById("edit-full").value = updated.full_description || "";
-      document.getElementById("edit-guests").value = updated.guests || "";
-      document.getElementById("edit-price").value = updated.base_price || "";
-      document.getElementById("edit-status").value = updated.status || "draft";
-      loadExistingPhotos(updated);
-    }
-  }
-
-  document.getElementById("new-property-form").addEventListener("submit", handleNewProperty);
-  document.getElementById("edit-property-form").addEventListener("submit", handleEditSubmit);
 
   (async () => {
     currentUser = await getCurrentUser();
     if (!currentUser) return;
+    document.getElementById("owner-email").textContent = currentUser.email;
     loadMyProperties();
   })();
 </script>

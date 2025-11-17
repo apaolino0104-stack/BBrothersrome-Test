@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Nuova proprietà – B&Brother’s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner fade-in">
+    <a href="proprietari.html" class="logo">
+      <img src="logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+      <div class="logo-text">
+        <span class="logo-title">B&Brother’s</span>
+        <span class="logo-subtitle">Gestione affitti brevi a Roma</span>
+      </div>
+    </a>
+    <nav class="main-nav">
+      <a href="proprietari.html" class="nav-link">Home proprietari</a>
+      <a href="proprietari.html#come-funziona" class="nav-link">Come funziona</a>
+      <a href="proprietari.html#servizi-proprietari" class="nav-link">Servizi</a>
+      <a href="proprietari.html#commissione" class="nav-link">Commissione</a>
+      <a href="contatti.html" class="nav-link">Contatti</a>
+      <a href="login.html" class="nav-link nav-link-active">🔑 Area proprietari</a>
+    </nav>
+    <a href="ospiti.html" class="nav-link nav-link-ghost">Vuoi prenotare un soggiorno?</a>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero">
+    <div class="container fade-in">
+      <p class="eyebrow">Area proprietari</p>
+      <h1>Crea una nuova proprietà</h1>
+      <p class="page-hero-subtitle">Compila i dati dell'annuncio, carica più foto (la prima diventa copertina) e salva la bozza.</p>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow" style="color: var(--text-muted);">Nuovo annuncio</p>
+          <h2>Dati della struttura</h2>
+          <p class="section-subtitle">Manteniamo il layout essenziale: titolo, descrizione, prezzo, capienza e la galleria fotografica.</p>
+        </div>
+        <a href="area-proprietari.html" class="btn btn-outline">← Torna alle tue strutture</a>
+      </div>
+
+      <form id="new-property-form" class="contact-form">
+        <label>
+          Titolo
+          <input type="text" id="prop-title" required />
+        </label>
+        <label>
+          Zona
+          <input type="text" id="prop-zone" />
+        </label>
+        <label>
+          Descrizione breve
+          <textarea id="prop-short" rows="2"></textarea>
+        </label>
+        <label>
+          Descrizione completa
+          <textarea id="prop-full" rows="4"></textarea>
+        </label>
+        <div class="two-cols">
+          <label>
+            Posti letto
+            <input type="number" id="prop-guests" />
+          </label>
+          <label>
+            Prezzo base (€/notte)
+            <input type="number" id="prop-price" step="0.01" />
+          </label>
+        </div>
+        <label>
+          Foto dell'alloggio (puoi selezionarne più di una)
+          <input type="file" id="prop-photos" accept="image/*" multiple />
+          <span class="small-label">La prima foto caricata diventa la copertina.</span>
+        </label>
+        <button type="submit" class="btn btn-primary btn-full">Salva struttura (bozza)</button>
+      </form>
+      <p id="prop-message" class="small-label"></p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
+    <p>WhatsApp: +39 334 507 1226 · Email: a.paolino0104@gmail.com</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+  const PHOTO_BUCKET = "property-photos";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
+<script>
+  function publicUrlFromPath(path) {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    return data?.publicUrl || null;
+  }
+
+  async function getCurrentUser() {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      window.location.href = "login.html";
+      return null;
+    }
+    return data.user;
+  }
+
+  let currentUser = null;
+
+  async function handleNewProperty(e) {
+    e.preventDefault();
+    const msg = document.getElementById("prop-message");
+    msg.textContent = "Salvataggio in corso...";
+
+    const title = document.getElementById("prop-title").value;
+    const zone = document.getElementById("prop-zone").value;
+    const shortDesc = document.getElementById("prop-short").value;
+    const fullDesc = document.getElementById("prop-full").value;
+    const guests = parseInt(document.getElementById("prop-guests").value || "0", 10);
+    const price = parseFloat(document.getElementById("prop-price").value || "0");
+    const photoFiles = Array.from(document.getElementById("prop-photos").files || []);
+
+    const { data: propData, error: propError } = await supabase
+      .from("properties")
+      .insert({
+        owner_id: currentUser.id,
+        title,
+        zone,
+        short_description: shortDesc,
+        full_description: fullDesc,
+        guests,
+        base_price: price,
+        status: "draft"
+      })
+      .select()
+      .single();
+
+    if (propError) {
+      msg.textContent = "Errore salvataggio struttura: " + propError.message;
+      return;
+    }
+
+    if (photoFiles.length > 0) {
+      let coverUrl = null;
+      const failedUploads = [];
+      const folderPath = `properties/${propData.id}`;
+
+      for (let i = 0; i < photoFiles.length; i++) {
+        const file = photoFiles[i];
+        const path = `${folderPath}/${Date.now()}-${i}-${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from(PHOTO_BUCKET)
+          .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+
+        if (uploadError) {
+          failedUploads.push(`${file.name}: ${uploadError.message}`);
+          continue;
+        }
+
+        const { error: insertError } = await supabase.from("property_photos").insert({
+          property_id: propData.id,
+          path,
+          is_cover: i === 0,
+          sort_order: i,
+        });
+
+        if (insertError) {
+          failedUploads.push(`${file.name}: ${insertError.message}`);
+          continue;
+        }
+
+        if (i === 0) {
+          coverUrl = publicUrlFromPath(path);
+        }
+      }
+
+      if (coverUrl) {
+        await supabase.from("properties").update({ cover_photo_url: coverUrl }).eq("id", propData.id);
+      }
+
+      if (failedUploads.length > 0) {
+        msg.textContent =
+          "Struttura salvata, alcune foto non sono state caricate (controlla i permessi del bucket property-photos su Supabase): " +
+          failedUploads.join("; ");
+      } else {
+        msg.textContent = "Struttura salvata in bozza con foto.";
+      }
+    } else {
+      msg.textContent = "Struttura salvata in bozza.";
+    }
+
+    document.getElementById("new-property-form").reset();
+    setTimeout(() => (window.location.href = "area-proprietari.html"), 800);
+  }
+
+  (async () => {
+    currentUser = await getCurrentUser();
+    if (!currentUser) return;
+    document.getElementById("new-property-form").addEventListener("submit", handleNewProperty);
+  })();
+</script>
+</body>
+</html>
