@@ -87,10 +87,18 @@
 <script>
   const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+  const PHOTO_BUCKET = "property-photos";
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 
 <script>
+  function publicUrlFromPath(path) {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    return data?.publicUrl || null;
+  }
+
   async function loadPublicProperties() {
     const listEl = document.getElementById("public-properties");
     const noteEl = document.getElementById("public-note");
@@ -99,7 +107,7 @@
 
     const { data, error } = await supabase
       .from("properties")
-      .select("*")
+      .select("*, property_photos(path,is_cover,sort_order)")
       .eq("status", "published")
       .order("created_at", { ascending: false });
 
@@ -116,9 +124,18 @@
     }
 
     listEl.innerHTML = data
-      .map((p) => `
+      .map((p) => {
+        const photoList = Array.isArray(p.property_photos) ? [...p.property_photos] : [];
+        const sortedPhotos = photoList.sort((a, b) => {
+          if (a.is_cover === b.is_cover) return (a.sort_order || 0) - (b.sort_order || 0);
+          return a.is_cover ? -1 : 1;
+        });
+        const chosenPhoto = sortedPhotos[0];
+        const coverUrl = chosenPhoto ? publicUrlFromPath(chosenPhoto.path) : publicUrlFromPath(p.cover_photo_url);
+
+        return `
         <a class="listing-card listing-large listing-link lift-on-hover fade-in" href="property.html?id=${p.id}">
-          ${p.cover_photo_url ? `<img src="${p.cover_photo_url}" alt="Foto di ${p.title}" class="listing-cover" />` : ""}
+          ${coverUrl ? `<img src="${coverUrl}" alt="Foto di ${p.title}" class="listing-cover" />` : ""}
           <div class="listing-badge-row">
             <span class="badge">${p.zone || "Roma"}</span>
             <span class="badge badge-strong">${p.guests || "?"} ospiti</span>
@@ -132,8 +149,8 @@
             <span class="rating">Annuncio gestito da B&Brother’s</span>
             <span class="btn btn-outline-sm">Apri la scheda</span>
           </div>
-        </a>
-      `)
+        </a>`;
+      })
       .join("");
   }
 

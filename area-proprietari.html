@@ -151,10 +151,32 @@
 <script>
   const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+  const PHOTO_BUCKET = "property-photos";
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 
 <script>
+  function publicUrlFromPath(path) {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    return data?.publicUrl || null;
+  }
+
+  function getStoragePathFromUrl(url) {
+    try {
+      const parsed = new URL(url);
+      const segments = parsed.pathname.split("/").filter(Boolean);
+      const objectIndex = segments.findIndex((s) => s === "object");
+      if (objectIndex !== -1 && segments.length > objectIndex + 2) {
+        return segments.slice(objectIndex + 2).join("/");
+      }
+    } catch (e) {
+      console.warn("Impossibile derivare il path dello storage", e);
+    }
+    return url;
+  }
+
   async function getCurrentUser() {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
@@ -167,25 +189,6 @@
   let currentUser = null;
   let propertiesCache = [];
   let selectedPropertyId = null;
-
-  function getStorageFolder(property, fallbackOwnerId) {
-    if (property.cover_photo_url) {
-      try {
-        const url = new URL(property.cover_photo_url);
-        const segments = url.pathname.split("/").filter(Boolean);
-        const objectIndex = segments.findIndex((s) => s === "object");
-        const baseSegments = segments.slice(objectIndex + 2, segments.length - 1);
-        if (baseSegments.length >= 2) {
-          return baseSegments.join("/");
-        }
-      } catch (e) {
-        console.warn("Impossibile derivare la cartella dalle URL della copertina", e);
-      }
-    }
-    if (property.owner_id) return `${property.owner_id}/${property.id}`;
-    if (fallbackOwnerId) return `${fallbackOwnerId}/${property.id}`;
-    return `${property.id}`;
-  }
 
   document.getElementById("btn-logout").addEventListener("click", async () => {
     await supabase.auth.signOut();
@@ -270,21 +273,35 @@
 
     if (photoFiles.length > 0) {
       let coverUrl = null;
-      const folderPath = `${currentUser.id}/${propData.id}`;
       const failedUploads = [];
+      const folderPath = `properties/${propData.id}`;
 
       for (let i = 0; i < photoFiles.length; i++) {
         const file = photoFiles[i];
         const path = `${folderPath}/${Date.now()}-${i}-${file.name}`;
         const { error: uploadError } = await supabase.storage
-          .from("property-photos")
+          .from(PHOTO_BUCKET)
           .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
 
         if (uploadError) {
           failedUploads.push(`${file.name}: ${uploadError.message}`);
-        } else {
-          const { data: publicData } = supabase.storage.from("property-photos").getPublicUrl(path);
-          if (i === 0) coverUrl = publicData.publicUrl;
+          continue;
+        }
+
+        const { error: insertError } = await supabase.from("property_photos").insert({
+          property_id: propData.id,
+          path,
+          is_cover: i === 0,
+          sort_order: i,
+        });
+
+        if (insertError) {
+          failedUploads.push(`${file.name}: ${insertError.message}`);
+          continue;
+        }
+
+        if (i === 0) {
+          coverUrl = publicUrlFromPath(path);
         }
       }
 
@@ -343,11 +360,11 @@
           ${photos
             .map(
               (photo, idx) => `
-                <div class="gallery-thumb ${idx === 0 ? "thumb-active" : ""}" data-idx="${idx}" data-delete="${photo.name}">
+                <div class="gallery-thumb ${idx === 0 ? "thumb-active" : ""}" data-idx="${idx}" data-photo-id="${photo.id}" data-photo-path="${photo.path}">
                   <img src="${photo.url}" alt="Anteprima foto" loading="lazy" />
                   <div class="thumb-actions">
                     ${photo.isCover ? "<span class=\"badge\">Copertina</span>" : ""}
-                    <button class="btn btn-ghost btn-small" data-delete="${photo.name}" type="button">Elimina</button>
+                    <button class="btn btn-ghost btn-small" data-photo-id="${photo.id}" data-photo-path="${photo.path}" type="button">Elimina</button>
                   </div>
                 </div>
               `
@@ -375,10 +392,10 @@
       });
     });
 
-    gallery.querySelectorAll("[data-delete]").forEach((btn) => {
+    gallery.querySelectorAll("[data-photo-id]").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        deletePhoto(property, btn.dataset.delete);
+        deletePhoto(property, btn.dataset.photoId, btn.dataset.photoPath);
       });
     });
   }
@@ -386,66 +403,65 @@
   async function loadExistingPhotos(property) {
     const gallery = document.getElementById("edit-photos");
     gallery.innerHTML = "<p class=\"small-label\">Caricamento foto...</p>";
-    const folderPath = getStorageFolder(property, currentUser?.id);
+    const { data, error } = await supabase
+      .from("property_photos")
+      .select("*")
+      .eq("property_id", property.id)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
 
-    const { data, error } = await supabase.storage.from("property-photos").list(folderPath);
     if (error) {
       gallery.innerHTML =
         "<p>Errore nel recupero delle foto. Verifica che il bucket property-photos consenta a utenti autenticati di leggere e caricare.</p>";
       return;
     }
 
-    const photos = [];
+    const photos = (data || []).map((item) => {
+      const labelName = item.path?.split("/").pop() || "Foto";
+      return {
+        id: item.id,
+        url: publicUrlFromPath(item.path),
+        name: labelName,
+        label: item.is_cover ? "Foto di copertina" : labelName,
+        isCover: item.is_cover,
+        path: item.path,
+      };
+    });
 
-    if (property.cover_photo_url) {
+    if (photos.length === 0 && property.cover_photo_url) {
       photos.push({
+        id: "cover",
         url: property.cover_photo_url,
         name: "cover",
         label: "Foto di copertina",
         isCover: true,
+        path: getStoragePathFromUrl(property.cover_photo_url),
       });
     }
 
-    if (data) {
-      data
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .forEach((file) => {
-          const path = `${folderPath}/${file.name}`;
-          const { data: publicData } = supabase.storage.from("property-photos").getPublicUrl(path);
-          const already = photos.some((ph) => ph.url === publicData.publicUrl);
-          if (!already) {
-            photos.push({
-              url: publicData.publicUrl,
-              name: file.name,
-              label: file.name,
-              isCover: property.cover_photo_url ? property.cover_photo_url.includes(file.name) : false,
-            });
-          }
-        });
+    if (photos.length > 0) {
+      const coverPhoto = photos.find((p) => p.isCover) || photos[0];
+      property.cover_photo_url = coverPhoto.url;
     }
 
     renderOwnerGallery(gallery, photos, property);
   }
 
-  async function deletePhoto(property, fileName) {
-    const folderPath = getStorageFolder(property, currentUser?.id);
-    const fullPath = `${folderPath}/${fileName}`;
-    const { error } = await supabase.storage.from("property-photos").remove([fullPath]);
-    if (error) {
-      alert("Errore nell'eliminazione: " + error.message);
-      return;
+  async function deletePhoto(property, photoId, photoPath) {
+    const toDeletePath = photoPath?.startsWith("http") ? getStoragePathFromUrl(photoPath) : photoPath;
+
+    if (toDeletePath) {
+      const { error: storageError } = await supabase.storage.from(PHOTO_BUCKET).remove([toDeletePath]);
+      if (storageError) {
+        alert("Errore nell'eliminazione dallo storage: " + storageError.message);
+        return;
+      }
     }
 
-    if (property.cover_photo_url && property.cover_photo_url.includes(fileName)) {
-      const { data } = await supabase.storage.from("property-photos").list(folderPath);
-      if (data && data.length > 0) {
-        const nextPath = `${folderPath}/${data[0].name}`;
-        const { data: publicData } = supabase.storage.from("property-photos").getPublicUrl(nextPath);
-        await supabase.from("properties").update({ cover_photo_url: publicData.publicUrl }).eq("id", property.id);
-        property.cover_photo_url = publicData.publicUrl;
-      } else {
-        await supabase.from("properties").update({ cover_photo_url: null }).eq("id", property.id);
-        property.cover_photo_url = null;
+    if (photoId && photoId !== "cover") {
+      const { error: dbError } = await supabase.from("property_photos").delete().eq("id", photoId);
+      if (dbError) {
+        alert("Foto rimossa dallo storage ma non dal database: " + dbError.message);
       }
     }
 
@@ -487,16 +503,42 @@
 
     if (newPhotos.length > 0) {
       let coverUrl = null;
+      const failedUploads = [];
+      const { count } = await supabase
+        .from("property_photos")
+        .select("id", { count: "exact", head: true })
+        .eq("property_id", selectedPropertyId);
+      const offset = count || 0;
+
+      await supabase.from("property_photos").update({ is_cover: false }).eq("property_id", selectedPropertyId);
+
       for (let i = 0; i < newPhotos.length; i++) {
         const file = newPhotos[i];
-        const path = `${currentUser.id}/${selectedPropertyId}/${Date.now()}-${i}-${file.name}`;
-        const { error: uploadError } = await supabase.storage.from("property-photos").upload(path, file);
+        const path = `properties/${selectedPropertyId}/${Date.now()}-${i}-${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from(PHOTO_BUCKET)
+          .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+
         if (uploadError) {
-          msg.textContent = "Modifica salvata ma errore foto: " + uploadError.message;
+          failedUploads.push(`${file.name}: ${uploadError.message}`);
           continue;
         }
-        const { data: publicData } = supabase.storage.from("property-photos").getPublicUrl(path);
-        if (i === 0) coverUrl = publicData.publicUrl;
+
+        const { error: insertError } = await supabase.from("property_photos").insert({
+          property_id: selectedPropertyId,
+          path,
+          is_cover: i === 0,
+          sort_order: offset + i,
+        });
+
+        if (insertError) {
+          failedUploads.push(`${file.name}: ${insertError.message}`);
+          continue;
+        }
+
+        if (i === 0) {
+          coverUrl = publicUrlFromPath(path);
+        }
       }
 
       if (coverUrl) {
@@ -504,9 +546,17 @@
         const cached = propertiesCache.find((p) => p.id === selectedPropertyId);
         if (cached) cached.cover_photo_url = coverUrl;
       }
+
+      if (failedUploads.length > 0) {
+        msg.textContent =
+          "Modifica salvata ma alcune foto non sono state caricate (controlla i permessi del bucket property-photos su Supabase): " +
+          failedUploads.join("; ");
+      }
     }
 
-    msg.textContent = "Annuncio aggiornato.";
+    if (!msg.textContent) {
+      msg.textContent = "Annuncio aggiornato.";
+    }
     document.getElementById("edit-photos-input").value = "";
     await loadMyProperties();
 

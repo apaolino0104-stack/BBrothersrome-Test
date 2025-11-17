@@ -73,6 +73,7 @@
 <script>
   const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+  const PHOTO_BUCKET = "property-photos";
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 
@@ -88,22 +89,11 @@
   const priceEl = document.getElementById("prop-price");
   const whatsappLink = document.getElementById("whatsapp-link");
 
-  function getStorageFolder(property) {
-    if (property.cover_photo_url) {
-      try {
-        const url = new URL(property.cover_photo_url);
-        const segments = url.pathname.split("/").filter(Boolean);
-        const objectIndex = segments.findIndex((s) => s === "object");
-        const baseSegments = segments.slice(objectIndex + 2, segments.length - 1);
-        if (baseSegments.length >= 2) {
-          return baseSegments.join("/");
-        }
-      } catch (e) {
-        console.warn("Impossibile derivare la cartella delle foto", e);
-      }
-    }
-    if (property.owner_id) return `${property.owner_id}/${property.id}`;
-    return `${property.id}`;
+  function publicUrlFromPath(path) {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    return data?.publicUrl || null;
   }
 
   if (!propertyId) {
@@ -156,39 +146,23 @@
     });
   }
 
-  async function loadGallery(property) {
+  async function loadGallery(photoRows, coverFallback) {
     galleryEl.innerHTML = "<p>Caricamento foto...</p>";
-    const folderPath = getStorageFolder(property);
+    const orderedRows = Array.isArray(photoRows)
+      ? [...photoRows].sort((a, b) => {
+          if (a.is_cover === b.is_cover) return (a.sort_order || 0) - (b.sort_order || 0);
+          return a.is_cover ? -1 : 1;
+        })
+      : [];
 
-    const photos = [];
+    const photos = orderedRows.map((row) => ({
+      url: publicUrlFromPath(row.path),
+      name: row.is_cover ? "Foto di copertina" : row.path?.split("/").pop() || "Foto",
+    }));
 
-    if (property.cover_photo_url) {
-      photos.push({ url: property.cover_photo_url, name: "Foto di copertina" });
+    if (photos.length === 0 && coverFallback) {
+      photos.push({ url: coverFallback, name: "Foto di copertina" });
     }
-
-    const { data, error } = await supabase.storage
-      .from("property-photos")
-      .list(folderPath);
-
-    if (error) {
-      console.error(error);
-      galleryEl.innerHTML = "<p>Errore nel caricamento delle foto.</p>";
-      return;
-    }
-
-    data
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .forEach((file) => {
-        const path = `${folderPath}/${file.name}`;
-        const { data: publicData } = supabase.storage
-          .from("property-photos")
-          .getPublicUrl(path);
-
-        const alreadyAdded = photos.some((ph) => ph.url === publicData.publicUrl);
-        if (!alreadyAdded) {
-          photos.push({ url: publicData.publicUrl, name: file.name });
-        }
-      });
 
     renderGallery(photos);
   }
@@ -199,7 +173,7 @@
 
     const { data, error } = await supabase
       .from("properties")
-      .select("*")
+      .select("*, property_photos(*)")
       .eq("id", propertyId)
       .single();
 
@@ -228,7 +202,7 @@
       `Ciao, vorrei informazioni sull'alloggio "${property.title}"`
     )}`;
 
-    loadGallery(property);
+    loadGallery(property.property_photos || [], property.cover_photo_url);
   }
 
   loadProperty();
