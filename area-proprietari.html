@@ -64,54 +64,6 @@
       </div>
       <div id="my-properties" class="cards-grid"></div>
     </section>
-
-    <hr style="margin: 24px 0;">
-
-    <section id="edit-section" style="display: none;">
-      <h2>Modifica struttura</h2>
-      <p class="small-label">Seleziona una struttura dalla lista sopra per modificarla in ogni dettaglio.</p>
-      <div id="edit-photos" class="gallery-grid" style="margin: 12px 0;"></div>
-      <form id="edit-property-form" class="contact-form">
-        <label>
-          Titolo
-          <input type="text" id="edit-title" required />
-        </label>
-        <label>
-          Zona
-          <input type="text" id="edit-zone" />
-        </label>
-        <label>
-          Descrizione breve
-          <textarea id="edit-short" rows="2"></textarea>
-        </label>
-        <label>
-          Descrizione completa
-          <textarea id="edit-full" rows="4"></textarea>
-        </label>
-        <label>
-          Posti letto
-          <input type="number" id="edit-guests" />
-        </label>
-        <label>
-          Prezzo base (€/notte)
-          <input type="number" id="edit-price" step="0.01" />
-        </label>
-        <label>
-          Stato annuncio
-          <select id="edit-status">
-            <option value="draft">Bozza</option>
-            <option value="published">Pubblicato</option>
-          </select>
-        </label>
-        <label>
-          Carica nuove foto (opzionale)
-          <input type="file" id="edit-photos-input" accept="image/*" multiple />
-          <span class="small-label">La prima nuova foto sovrascrive la copertina.</span>
-        </label>
-        <button type="submit" class="btn btn-primary btn-full">Salva modifiche</button>
-      </form>
-      <p id="edit-message" class="small-label"></p>
-    </section>
   </div>
 </section>
 
