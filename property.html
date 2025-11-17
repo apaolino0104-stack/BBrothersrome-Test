@@ -9,7 +9,7 @@
 <body>
 <header class="site-header">
   <div class="container header-inner fade-in">
-    <a href="index.html" class="logo">
+    <a href="ospiti.html" class="logo">
       <img src="logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
       <div class="logo-text">
         <span class="logo-title">B&Brother’s</span>
@@ -17,18 +17,13 @@
       </div>
     </a>
     <nav class="main-nav">
-      <a href="index.html" class="nav-link">Home</a>
-        <a href="proprietari.html" class="nav-link">Per i proprietari</a>
-        <a href="ospiti.html" class="nav-link">Per gli ospiti</a>
-        <a href="alloggi.html" class="nav-link nav-link-active">Alloggi</a>
-        <a href="come-lavoriamo.html" class="nav-link">Come lavoriamo</a>
-        <a href="chi-siamo.html" class="nav-link">Chi siamo</a>
-        <a href="faq.html" class="nav-link">FAQ</a>
-        <a href="contatti.html" class="nav-link">Contatti</a>
-        <a href="login.html" class="nav-link">Area proprietari</a>
-
+      <a href="ospiti.html" class="nav-link">Home ospiti</a>
+      <a href="alloggi.html" class="nav-link nav-link-active">Tutti gli alloggi</a>
+      <a href="servizi-extra.html" class="nav-link">Servizi extra</a>
+      <a href="ospiti.html#come-funziona-ospiti" class="nav-link">Come funziona</a>
+      <a href="contatti.html" class="nav-link">Contatti</a>
     </nav>
-    <a href="https://wa.me/393345071226" class="btn btn-whatsapp">WhatsApp</a>
+    <a href="proprietari.html" class="nav-link nav-link-ghost">Sei un proprietario?</a>
   </div>
 </header>
 
@@ -79,6 +74,7 @@
 <script>
   const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+  const PHOTO_BUCKET = "property-photos";
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 
@@ -94,59 +90,82 @@
   const priceEl = document.getElementById("prop-price");
   const whatsappLink = document.getElementById("whatsapp-link");
 
+  function publicUrlFromPath(path) {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    return data?.publicUrl || null;
+  }
+
   if (!propertyId) {
     titleEl.textContent = "Seleziona un alloggio";
     shortEl.textContent = "Torna alla pagina Alloggi e clicca su una scheda per vedere i dettagli.";
     messageEl.innerHTML = "<p>Apri <strong>alloggi.html</strong>, scegli un annuncio pubblicato e verrai portato qui con tutte le informazioni e le foto.</p>";
   }
 
-  async function loadGallery(property) {
-    galleryEl.innerHTML = "<p>Caricamento foto...</p>";
-    const folderPath = `${property.owner_id}/${property.id}`;
-
-    const photos = [];
-
-    if (property.cover_photo_url) {
-      photos.push({ url: property.cover_photo_url, name: "Foto di copertina" });
-    }
-
-    const { data, error } = await supabase.storage
-      .from("property-photos")
-      .list(folderPath);
-
-    if (error) {
-      console.error(error);
-      galleryEl.innerHTML = "<p>Errore nel caricamento delle foto.</p>";
-      return;
-    }
-
-    data.forEach((file) => {
-      const path = `${folderPath}/${file.name}`;
-      const { data: publicData } = supabase.storage
-        .from("property-photos")
-        .getPublicUrl(path);
-
-      const alreadyAdded = photos.some((ph) => ph.url === publicData.publicUrl);
-      if (!alreadyAdded) {
-        photos.push({ url: publicData.publicUrl, name: file.name });
-      }
-    });
-
+  function renderGallery(photos) {
     if (photos.length === 0) {
       galleryEl.innerHTML = "<p>Il proprietario non ha ancora caricato foto.</p>";
       return;
     }
 
-    galleryEl.innerHTML = photos
-      .map(
-        (photo) => `
-        <figure class="property-photo">
-          <img src="${photo.url}" alt="Foto dell'alloggio" loading="lazy" />
-          <figcaption>${photo.name}</figcaption>
-        </figure>
-      `
-      )
-      .join("");
+    const first = photos[0];
+    galleryEl.innerHTML = `
+      <div class="gallery-viewer">
+        <div class="gallery-main">
+          <img id="gallery-main-img" src="${first.url}" alt="${first.name}" loading="lazy" />
+          <div class="gallery-caption">${first.name}</div>
+        </div>
+        <div class="gallery-thumbs" id="gallery-thumbs">
+          ${photos
+            .map(
+              (photo, idx) => `
+                <button class="gallery-thumb ${idx === 0 ? "thumb-active" : ""}" data-idx="${idx}" aria-label="${photo.name}">
+                  <img src="${photo.url}" alt="Anteprima foto" loading="lazy" />
+                </button>
+              `
+            )
+            .join("")}
+        </div>
+      </div>
+    `;
+
+    const mainImg = document.getElementById("gallery-main-img");
+    const caption = galleryEl.querySelector(".gallery-caption");
+    const thumbs = Array.from(document.querySelectorAll(".gallery-thumb"));
+
+    thumbs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const index = parseInt(btn.dataset.idx, 10);
+        const photo = photos[index];
+        mainImg.src = photo.url;
+        mainImg.alt = photo.name;
+        caption.textContent = photo.name;
+        thumbs.forEach((el) => el.classList.remove("thumb-active"));
+        btn.classList.add("thumb-active");
+      });
+    });
+  }
+
+  async function loadGallery(photoRows, coverFallback) {
+    galleryEl.innerHTML = "<p>Caricamento foto...</p>";
+    const orderedRows = Array.isArray(photoRows)
+      ? [...photoRows].sort((a, b) => {
+          if (a.is_cover === b.is_cover) return (a.sort_order || 0) - (b.sort_order || 0);
+          return a.is_cover ? -1 : 1;
+        })
+      : [];
+
+    const photos = orderedRows.map((row) => ({
+      url: publicUrlFromPath(row.path),
+      name: row.is_cover ? "Foto di copertina" : row.path?.split("/").pop() || "Foto",
+    }));
+
+    if (photos.length === 0 && coverFallback) {
+      photos.push({ url: coverFallback, name: "Foto di copertina" });
+    }
+
+    renderGallery(photos);
   }
 
   async function loadProperty() {
@@ -155,7 +174,7 @@
 
     const { data, error } = await supabase
       .from("properties")
-      .select("*")
+      .select("*, property_photos(*)")
       .eq("id", propertyId)
       .single();
 
@@ -171,9 +190,9 @@
     fullEl.textContent = property.full_description || "Il proprietario non ha ancora inserito una descrizione completa.";
 
     metaEl.innerHTML = `
-      <span class="badge">${property.zone || "Roma"}</span>
-      <span class="badge badge-strong">${property.guests || "?"} ospiti</span>
-      <span class="badge">${property.status === "published" ? "Annuncio online" : "Bozza"}</span>
+      <span class=\"badge\">${property.zone || "Roma"}</span>
+      <span class=\"badge badge-strong\">${property.guests || "?"} ospiti</span>
+      <span class=\"badge\">${property.status === "published" ? "Annuncio online" : "Bozza"}</span>
     `;
 
     priceEl.textContent = property.base_price
@@ -184,7 +203,7 @@
       `Ciao, vorrei informazioni sull'alloggio "${property.title}"`
     )}`;
 
-    loadGallery(property);
+    loadGallery(property.property_photos || [], property.cover_photo_url);
   }
 
   loadProperty();

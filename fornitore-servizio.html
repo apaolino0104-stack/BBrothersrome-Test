@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Servizio extra – B&Brother’s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner fade-in">
+    <a href="index.html" class="logo">
+      <img src="logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+      <div class="logo-text">
+        <span class="logo-title">B&Brother’s</span>
+        <span class="logo-subtitle">Gestione servizi extra</span>
+      </div>
+    </a>
+    <nav class="main-nav"></nav>
+    <a href="fornitore-dashboard.html" class="btn btn-ghost">Torna alla dashboard</a>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero">
+    <div class="container fade-in">
+      <p class="eyebrow" id="mode-label">Nuovo servizio</p>
+      <h1 id="page-title">Crea o modifica un servizio</h1>
+      <p class="page-hero-subtitle">Inserisci i dettagli del servizio e le opzioni acquistabili dagli ospiti.</p>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="container">
+      <form id="service-form" class="stacked-form">
+        <div class="two-cols">
+          <label>
+            Titolo
+            <input type="text" id="svc-title" required />
+          </label>
+          <label>
+            Categoria
+            <input type="text" id="svc-category" placeholder="Trasporti, cucina, shooting..." />
+          </label>
+        </div>
+        <label>
+          Descrizione
+          <textarea id="svc-desc" rows="3" placeholder="Cosa offri, come funziona, tempi..."></textarea>
+        </label>
+        <label class="checkbox-inline">
+          <input type="checkbox" id="svc-active" checked /> Servizio attivo e visibile agli ospiti
+        </label>
+
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Opzioni del servizio</p>
+            <h3>Tariffe e disponibilità</h3>
+          </div>
+          <button type="button" class="btn btn-outline-sm" id="add-option">+ Aggiungi opzione</button>
+        </div>
+
+        <div id="options-container" class="options-grid"></div>
+
+        <button type="submit" class="btn btn-primary btn-full">Salva servizio</button>
+        <p id="form-message" class="small-label"></p>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
+    <p>WhatsApp: +39 334 507 1226 · Email: a.paolino0104@gmail.com</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
+<script>
+  let currentUser = null;
+  let provider = null;
+  let serviceId = new URLSearchParams(window.location.search).get("service_id");
+
+  const modeLabel = document.getElementById("mode-label");
+  const pageTitle = document.getElementById("page-title");
+  const messageEl = document.getElementById("form-message");
+  const optionsContainer = document.getElementById("options-container");
+
+  async function fetchProvider(userId) {
+    const { data, error } = await supabase.from("providers").select("*").eq("user_id", userId).single();
+    if (error || !data) return null;
+    return data;
+  }
+
+  async function ensureAuth() {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      window.location.href = "fornitore-login.html";
+      return null;
+    }
+    currentUser = data.user;
+    provider = await fetchProvider(currentUser.id);
+    if (!provider) {
+      await supabase.auth.signOut();
+      window.location.href = "fornitore-login.html";
+      return null;
+    }
+    return provider;
+  }
+
+  function addOptionRow(option = {}) {
+    const row = document.createElement("div");
+    row.className = "option-row";
+    row.dataset.id = option.id || "";
+    row.innerHTML = `
+      <div class="two-cols">
+        <label>Nome opzione<input type="text" class="opt-name" value="${option.name || ""}" placeholder="Trasferimento aeroporto" /></label>
+        <label>Prezzo (EUR)<input type="number" step="0.01" class="opt-price" value="${option.price_cents ? option.price_cents / 100 : ""}" /></label>
+      </div>
+      <label>Descrizione breve<input type="text" class="opt-desc" value="${option.description || ""}" placeholder="Dettaglio rapido" /></label>
+      <div class="two-cols">
+        <label>Giorni disponibili<input type="text" class="opt-days" value="${option.available_days || ""}" placeholder="lun,mar,mer" /></label>
+        <label class="checkbox-inline"><input type="checkbox" class="opt-active" ${option.is_active === false ? "" : "checked"} /> Attiva</label>
+      </div>
+    `;
+    optionsContainer.appendChild(row);
+  }
+
+  async function loadService() {
+    if (!serviceId) return addOptionRow();
+    modeLabel.textContent = "Modifica servizio";
+    pageTitle.textContent = "Aggiorna le informazioni del servizio";
+    const { data, error } = await supabase.from("extra_services").select("*").eq("id", serviceId).single();
+    if (error || !data) {
+      messageEl.textContent = "Servizio non trovato.";
+      return;
+    }
+    if (data.provider_id !== provider.id) {
+      messageEl.textContent = "Non puoi modificare questo servizio.";
+      return;
+    }
+
+    document.getElementById("svc-title").value = data.title || "";
+    document.getElementById("svc-desc").value = data.description || "";
+    document.getElementById("svc-category").value = data.category || "";
+    document.getElementById("svc-active").checked = data.is_active !== false;
+
+    const { data: opts } = await supabase
+      .from("extra_service_options")
+      .select("*")
+      .eq("service_id", serviceId)
+      .order("created_at", { ascending: true });
+
+    optionsContainer.innerHTML = "";
+    (opts || []).forEach((opt) => addOptionRow(opt));
+    if (!opts || opts.length === 0) addOptionRow();
+  }
+
+  function collectOptions(finalServiceId) {
+    const rows = Array.from(document.querySelectorAll(".option-row"));
+    const payloads = [];
+    rows.forEach((row) => {
+      const name = row.querySelector(".opt-name").value.trim();
+      const desc = row.querySelector(".opt-desc").value.trim();
+      const price = parseFloat(row.querySelector(".opt-price").value || "0");
+      const days = row.querySelector(".opt-days").value.trim();
+      const active = row.querySelector(".opt-active").checked;
+      if (!name && !desc) return;
+      payloads.push({
+        id: row.dataset.id || undefined,
+        service_id: finalServiceId,
+        name,
+        description: desc,
+        price_cents: Math.round(price * 100),
+        available_days: days,
+        is_active: active,
+      });
+    });
+    return payloads;
+  }
+
+  async function saveService(e) {
+    e.preventDefault();
+    messageEl.textContent = "Salvataggio in corso...";
+    const title = document.getElementById("svc-title").value.trim();
+    const desc = document.getElementById("svc-desc").value.trim();
+    const category = document.getElementById("svc-category").value.trim();
+    const isActive = document.getElementById("svc-active").checked;
+
+    if (!title) {
+      messageEl.textContent = "Inserisci un titolo per il servizio.";
+      return;
+    }
+
+    if (serviceId) {
+      const { error } = await supabase
+        .from("extra_services")
+        .update({ title, description: desc, category, is_active: isActive })
+        .eq("id", serviceId)
+        .eq("provider_id", provider.id);
+      if (error) {
+        messageEl.textContent = "Errore nel salvataggio: " + error.message;
+        return;
+      }
+    } else {
+      const { data, error } = await supabase
+        .from("extra_services")
+        .insert({ title, description: desc, category, is_active: isActive, provider_id: provider.id })
+        .select()
+        .single();
+      if (error || !data) {
+        messageEl.textContent = "Errore nel salvataggio: " + (error?.message || "");
+        return;
+      }
+      serviceId = data.id;
+    }
+
+    const optionPayloads = collectOptions(serviceId);
+    if (optionPayloads.length > 0) {
+      const { error: optError } = await supabase.from("extra_service_options").upsert(optionPayloads);
+      if (optError) {
+        messageEl.textContent = "Servizio salvato, ma alcune opzioni non sono state aggiornate: " + optError.message;
+        return;
+      }
+    }
+
+    window.location.href = "fornitore-dashboard.html?saved=1";
+  }
+
+  document.getElementById("add-option")?.addEventListener("click", () => addOptionRow());
+  document.getElementById("service-form")?.addEventListener("submit", saveService);
+
+  (async () => {
+    const ok = await ensureAuth();
+    if (!ok) return;
+    await loadService();
+  })();
+</script>
+</body>
+</html>

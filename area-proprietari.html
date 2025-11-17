@@ -9,7 +9,7 @@
 <body>
 <header class="site-header">
   <div class="container header-inner fade-in">
-    <a href="index.html" class="logo">
+    <a href="proprietari.html" class="logo">
       <img src="logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
       <div class="logo-text">
         <span class="logo-title">B&Brother’s</span>
@@ -17,18 +17,14 @@
       </div>
     </a>
     <nav class="main-nav">
-      <a href="index.html" class="nav-link">Home</a>
-        <a href="proprietari.html" class="nav-link">Per i proprietari</a>
-        <a href="ospiti.html" class="nav-link">Per gli ospiti</a>
-        <a href="alloggi.html" class="nav-link">Alloggi</a>
-        <a href="come-lavoriamo.html" class="nav-link">Come lavoriamo</a>
-        <a href="chi-siamo.html" class="nav-link">Chi siamo</a>
-        <a href="faq.html" class="nav-link">FAQ</a>
-        <a href="contatti.html" class="nav-link">Contatti</a>
-        <a href="login.html" class="nav-link nav-link-active">Area proprietari</a>
-        
+      <a href="proprietari.html" class="nav-link">Home proprietari</a>
+      <a href="proprietari.html#come-funziona" class="nav-link">Come funziona</a>
+      <a href="proprietari.html#servizi-proprietari" class="nav-link">Servizi</a>
+      <a href="proprietari.html#commissione" class="nav-link">Commissione</a>
+      <a href="contatti.html" class="nav-link">Contatti</a>
+      <a href="login.html" class="nav-link nav-link-active">🔑 Area proprietari</a>
     </nav>
-    <a href="https://wa.me/393345071226" class="btn btn-whatsapp">WhatsApp</a>
+    <a href="ospiti.html" class="nav-link nav-link-ghost">Vuoi prenotare un soggiorno?</a>
   </div>
 </header>
 
@@ -39,56 +35,34 @@
     <p class="eyebrow">Area proprietari</p>
     <h1>Le tue strutture</h1>
     <p class="page-hero-subtitle">
-      Qui puoi vedere e creare gli annunci delle tue strutture. In questa prima versione gli annunci vengono salvati come bozze.
+      Gestisci rapidamente gli annunci: rivedi la lista, aggiungi nuove proprietà o entra in modifica completa su una pagina dedicata.
     </p>
   </div>
 </section>
 
 <section class="section section-light">
   <div class="container">
-    <button id="btn-logout" class="btn btn-outline" style="margin: 10px 0;">Logout</button>
+    <div class="dashboard-bar">
+      <div>
+        <p class="small-label">Accesso proprietario</p>
+        <strong id="owner-email">&nbsp;</strong>
+      </div>
+      <div class="dashboard-actions">
+        <a href="area-proprietari-nuova.html" class="btn btn-primary">Aggiungi proprietà</a>
+        <button id="btn-logout" class="btn btn-outline">Logout</button>
+      </div>
+    </div>
 
-    <section style="margin-top: 20px;">
-      <h2>Le tue strutture</h2>
-      <div id="my-properties"></div>
-    </section>
-
-    <hr style="margin: 24px 0;">
-
-    <section>
-      <h2>Nuova struttura (bozza)</h2>
-      <form id="new-property-form" class="contact-form">
-        <label>
-          Titolo
-          <input type="text" id="prop-title" required />
-        </label>
-        <label>
-          Zona
-          <input type="text" id="prop-zone" />
-        </label>
-        <label>
-          Descrizione breve
-          <textarea id="prop-short" rows="2"></textarea>
-        </label>
-        <label>
-          Descrizione completa
-          <textarea id="prop-full" rows="4"></textarea>
-        </label>
-        <label>
-          Posti letto
-          <input type="number" id="prop-guests" />
-        </label>
-        <label>
-          Prezzo base (€/notte)
-          <input type="number" id="prop-price" step="0.01" />
-        </label>
-        <label>
-          Foto di copertina
-          <input type="file" id="prop-cover" accept="image/*" />
-        </label>
-        <button type="submit" class="btn btn-primary btn-full">Salva struttura (bozza)</button>
-      </form>
-      <p id="prop-message" class="small-label"></p>
+    <section style="margin-top: 14px;">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow" style="color: var(--text-muted);">Portfolio</p>
+          <h2>Le tue strutture</h2>
+          <p class="section-subtitle">Card compatte con stato, zona e copertina. Usa “Modifica” per aprire la pagina di editing completa.</p>
+        </div>
+        <a href="area-proprietari-nuova.html" class="btn btn-primary">+ Aggiungi proprietà</a>
+      </div>
+      <div id="my-properties" class="cards-grid"></div>
     </section>
   </div>
 </section>
@@ -106,10 +80,18 @@
 <script>
   const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+  const PHOTO_BUCKET = "property-photos";
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 
 <script>
+  function publicUrlFromPath(path) {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    return data?.publicUrl || null;
+  }
+
   async function getCurrentUser() {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
@@ -126,6 +108,30 @@
     window.location.href = "login.html";
   });
 
+  async function fetchCoverMap(ids) {
+    if (!ids || ids.length === 0) return {};
+    const { data, error } = await supabase
+      .from("property_photos")
+      .select("*")
+      .in("property_id", ids)
+      .order("is_cover", { ascending: false })
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.warn("Impossibile recuperare le cover", error.message);
+      return {};
+    }
+
+    const map = {};
+    (data || []).forEach((photo) => {
+      if (!map[photo.property_id]) {
+        map[photo.property_id] = photo;
+      }
+    });
+    return map;
+  }
+
   async function loadMyProperties() {
     const listEl = document.getElementById("my-properties");
     listEl.innerHTML = "Caricamento...";
@@ -133,6 +139,7 @@
     const { data, error } = await supabase
       .from("properties")
       .select("*")
+      .eq("owner_id", currentUser.id)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -141,90 +148,50 @@
     }
 
     if (!data || data.length === 0) {
-      listEl.innerHTML = "<p>Non hai ancora strutture.</p>";
+      listEl.innerHTML = `
+        <article class="listing-card">
+          <h3>Nessuna struttura</h3>
+          <p class="section-subtitle">Inizia aggiungendo la tua prima proprietà: copertina, dettagli e pubblicazione.</p>
+          <a class="btn btn-primary" href="area-proprietari-nuova.html">Aggiungi proprietà</a>
+        </article>
+      `;
       return;
     }
+
+    const ids = data.map((p) => p.id);
+    const coverMap = await fetchCoverMap(ids);
 
     listEl.innerHTML = data
-      .map(
-        (p) => `
-        <article class="listing-card">
-          <h3>${p.title}</h3>
-          <p>${p.short_description || ""}</p>
-          <p class="small-label">Stato: <strong>${p.status}</strong></p>
-        </article>
-      `
-      )
+      .map((p) => {
+        const coverPath = coverMap[p.id]?.path || p.cover_photo_url;
+        const coverUrl = publicUrlFromPath(coverPath) || "";
+        const badge = p.status === "published" ? "badge-strong" : "";
+        return `
+          <article class="listing-card lift-on-hover">
+            ${coverUrl ? `<img src="${coverUrl}" alt="Copertina ${p.title}" class="listing-cover" loading="lazy" />` : ""}
+            <div class="listing-badge-row" style="margin-bottom: 8px;">
+              <span class="badge ${badge}">${p.status || "bozza"}</span>
+              <span class="badge">${p.zone || "Roma"}</span>
+            </div>
+            <h3>${p.title}</h3>
+            <p>${p.short_description || ""}</p>
+            <div class="listing-badge-row" style="margin-top: 10px;">
+              ${p.guests ? `<span class="badge">${p.guests} ospiti</span>` : ""}
+              ${p.base_price ? `<span class="badge">€${p.base_price} / notte</span>` : ""}
+            </div>
+            <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+              <a class="btn btn-outline" href="area-proprietari-modifica.html?id=${p.id}">Modifica</a>
+            </div>
+          </article>
+        `;
+      })
       .join("");
   }
-
-  async function handleNewProperty(e) {
-    e.preventDefault();
-    const msg = document.getElementById("prop-message");
-    msg.textContent = "Salvataggio in corso...";
-
-    const title = document.getElementById("prop-title").value;
-    const zone = document.getElementById("prop-zone").value;
-    const shortDesc = document.getElementById("prop-short").value;
-    const fullDesc = document.getElementById("prop-full").value;
-    const guests = parseInt(document.getElementById("prop-guests").value || "0", 10);
-    const price = parseFloat(document.getElementById("prop-price").value || "0");
-    const coverFile = document.getElementById("prop-cover").files[0];
-
-    const { data: propData, error: propError } = await supabase
-      .from("properties")
-      .insert({
-        owner_id: currentUser.id,
-        title,
-        zone,
-        short_description: shortDesc,
-        full_description: fullDesc,
-        guests,
-        base_price: price,
-        status: "draft"
-      })
-      .select()
-      .single();
-
-    if (propError) {
-      msg.textContent = "Errore salvataggio struttura: " + propError.message;
-      return;
-    }
-
-    if (coverFile) {
-      const path = `${currentUser.id}/${propData.id}/${coverFile.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from("property-photos")
-        .upload(path, coverFile);
-
-      if (uploadError) {
-        msg.textContent = "Struttura creata, ma errore upload foto: " + uploadError.message;
-      } else {
-        const { data: publicData } = supabase.storage
-          .from("property-photos")
-          .getPublicUrl(path);
-        const coverUrl = publicData.publicUrl;
-
-        await supabase
-          .from("properties")
-          .update({ cover_photo_url: coverUrl })
-          .eq("id", propData.id);
-
-        msg.textContent = "Struttura salvata in bozza con foto.";
-      }
-    } else {
-      msg.textContent = "Struttura salvata in bozza.";
-    }
-
-    document.getElementById("new-property-form").reset();
-    loadMyProperties();
-  }
-
-  document.getElementById("new-property-form").addEventListener("submit", handleNewProperty);
 
   (async () => {
     currentUser = await getCurrentUser();
     if (!currentUser) return;
+    document.getElementById("owner-email").textContent = currentUser.email;
     loadMyProperties();
   })();
 </script>

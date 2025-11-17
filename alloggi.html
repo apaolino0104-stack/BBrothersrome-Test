@@ -9,7 +9,7 @@
 <body>
 <header class="site-header">
   <div class="container header-inner fade-in">
-    <a href="index.html" class="logo">
+    <a href="ospiti.html" class="logo">
       <img src="logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
       <div class="logo-text">
         <span class="logo-title">B&Brother’s</span>
@@ -17,18 +17,13 @@
       </div>
     </a>
     <nav class="main-nav">
-      <a href="index.html" class="nav-link">Home</a>
-        <a href="proprietari.html" class="nav-link">Per i proprietari</a>
-        <a href="ospiti.html" class="nav-link">Per gli ospiti</a>
-        <a href="alloggi.html" class="nav-link nav-link-active">Alloggi</a>
-        <a href="come-lavoriamo.html" class="nav-link">Come lavoriamo</a>
-        <a href="chi-siamo.html" class="nav-link">Chi siamo</a>
-        <a href="faq.html" class="nav-link">FAQ</a>
-        <a href="contatti.html" class="nav-link">Contatti</a>
-        <a href="login.html" class="nav-link">Area proprietari</a>
-        
+      <a href="ospiti.html" class="nav-link">Home ospiti</a>
+      <a href="alloggi.html" class="nav-link nav-link-active">Tutti gli alloggi</a>
+      <a href="servizi-extra.html" class="nav-link">Servizi extra</a>
+      <a href="ospiti.html#come-funziona-ospiti" class="nav-link">Come funziona</a>
+      <a href="contatti.html" class="nav-link">Contatti</a>
     </nav>
-    <a href="https://wa.me/393345071226" class="btn btn-whatsapp">WhatsApp</a>
+    <a href="proprietari.html" class="nav-link nav-link-ghost">Sei un proprietario?</a>
   </div>
 </header>
 
@@ -39,7 +34,7 @@
     <p class="eyebrow">Alloggi</p>
     <h1>I nostri appartamenti a Roma</h1>
     <p class="page-hero-subtitle">
-      Una selezione di alloggi curati, in zone strategiche della città. 
+      Una selezione di alloggi curati, in zone strategiche della città.
       Contattaci su WhatsApp per disponibilità e preventivi aggiornati.
     </p>
   </div>
@@ -93,10 +88,18 @@
 <script>
   const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+  const PHOTO_BUCKET = "property-photos";
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 
 <script>
+  function publicUrlFromPath(path) {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    return data?.publicUrl || null;
+  }
+
   async function loadPublicProperties() {
     const listEl = document.getElementById("public-properties");
     const noteEl = document.getElementById("public-note");
@@ -105,7 +108,7 @@
 
     const { data, error } = await supabase
       .from("properties")
-      .select("*")
+      .select("*, property_photos(path,is_cover,sort_order)")
       .eq("status", "published")
       .order("created_at", { ascending: false });
 
@@ -122,9 +125,18 @@
     }
 
     listEl.innerHTML = data
-      .map((p) => `
+      .map((p) => {
+        const photoList = Array.isArray(p.property_photos) ? [...p.property_photos] : [];
+        const sortedPhotos = photoList.sort((a, b) => {
+          if (a.is_cover === b.is_cover) return (a.sort_order || 0) - (b.sort_order || 0);
+          return a.is_cover ? -1 : 1;
+        });
+        const chosenPhoto = sortedPhotos[0];
+        const coverUrl = chosenPhoto ? publicUrlFromPath(chosenPhoto.path) : publicUrlFromPath(p.cover_photo_url);
+
+        return `
         <a class="listing-card listing-large listing-link lift-on-hover fade-in" href="property.html?id=${p.id}">
-          ${p.cover_photo_url ? `<img src="${p.cover_photo_url}" alt="Foto di ${p.title}" class="listing-cover" />` : ""}
+          ${coverUrl ? `<img src="${coverUrl}" alt="Foto di ${p.title}" class="listing-cover" />` : ""}
           <div class="listing-badge-row">
             <span class="badge">${p.zone || "Roma"}</span>
             <span class="badge badge-strong">${p.guests || "?"} ospiti</span>
@@ -138,8 +150,8 @@
             <span class="rating">Annuncio gestito da B&Brother’s</span>
             <span class="btn btn-outline-sm">Apri la scheda</span>
           </div>
-        </a>
-      `)
+        </a>`;
+      })
       .join("");
   }
 
