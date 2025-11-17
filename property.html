@@ -88,6 +88,24 @@
   const priceEl = document.getElementById("prop-price");
   const whatsappLink = document.getElementById("whatsapp-link");
 
+  function getStorageFolder(property) {
+    if (property.cover_photo_url) {
+      try {
+        const url = new URL(property.cover_photo_url);
+        const segments = url.pathname.split("/").filter(Boolean);
+        const objectIndex = segments.findIndex((s) => s === "object");
+        const baseSegments = segments.slice(objectIndex + 2, segments.length - 1);
+        if (baseSegments.length >= 2) {
+          return baseSegments.join("/");
+        }
+      } catch (e) {
+        console.warn("Impossibile derivare la cartella delle foto", e);
+      }
+    }
+    if (property.owner_id) return `${property.owner_id}/${property.id}`;
+    return `${property.id}`;
+  }
+
   if (!propertyId) {
     titleEl.textContent = "Seleziona un alloggio";
     shortEl.textContent = "Torna alla pagina Alloggi e clicca su una scheda per vedere i dettagli.";
@@ -96,7 +114,7 @@
 
   async function loadGallery(property) {
     galleryEl.innerHTML = "<p>Caricamento foto...</p>";
-    const folderPath = `${property.owner_id}/${property.id}`;
+    const folderPath = getStorageFolder(property);
 
     const photos = [];
 

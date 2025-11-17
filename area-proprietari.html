@@ -168,6 +168,25 @@
   let propertiesCache = [];
   let selectedPropertyId = null;
 
+  function getStorageFolder(property, fallbackOwnerId) {
+    if (property.cover_photo_url) {
+      try {
+        const url = new URL(property.cover_photo_url);
+        const segments = url.pathname.split("/").filter(Boolean);
+        const objectIndex = segments.findIndex((s) => s === "object");
+        const baseSegments = segments.slice(objectIndex + 2, segments.length - 1);
+        if (baseSegments.length >= 2) {
+          return baseSegments.join("/");
+        }
+      } catch (e) {
+        console.warn("Impossibile derivare la cartella dalle URL della copertina", e);
+      }
+    }
+    if (property.owner_id) return `${property.owner_id}/${property.id}`;
+    if (fallbackOwnerId) return `${fallbackOwnerId}/${property.id}`;
+    return `${property.id}`;
+  }
+
   document.getElementById("btn-logout").addEventListener("click", async () => {
     await supabase.auth.signOut();
     window.location.href = "login.html";
@@ -251,26 +270,35 @@
 
     if (photoFiles.length > 0) {
       let coverUrl = null;
+      const folderPath = `${currentUser.id}/${propData.id}`;
+      const failedUploads = [];
 
       for (let i = 0; i < photoFiles.length; i++) {
         const file = photoFiles[i];
-        const path = `${currentUser.id}/${propData.id}/${Date.now()}-${i}-${file.name}`;
-        const { error: uploadError } = await supabase.storage.from("property-photos").upload(path, file);
+        const path = `${folderPath}/${Date.now()}-${i}-${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("property-photos")
+          .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
 
         if (uploadError) {
-          msg.textContent = "Struttura creata, ma errore upload foto: " + uploadError.message;
-          continue;
+          failedUploads.push(`${file.name}: ${uploadError.message}`);
+        } else {
+          const { data: publicData } = supabase.storage.from("property-photos").getPublicUrl(path);
+          if (i === 0) coverUrl = publicData.publicUrl;
         }
-
-        const { data: publicData } = supabase.storage.from("property-photos").getPublicUrl(path);
-        if (i === 0) coverUrl = publicData.publicUrl;
       }
 
       if (coverUrl) {
         await supabase.from("properties").update({ cover_photo_url: coverUrl }).eq("id", propData.id);
       }
 
-      msg.textContent = "Struttura salvata in bozza con foto.";
+      if (failedUploads.length > 0) {
+        msg.textContent =
+          "Struttura salvata, alcune foto non sono state caricate (controlla i permessi del bucket property-photos su Supabase): " +
+          failedUploads.join("; ");
+      } else {
+        msg.textContent = "Struttura salvata in bozza con foto.";
+      }
     } else {
       msg.textContent = "Struttura salvata in bozza.";
     }
@@ -301,11 +329,12 @@
   async function loadExistingPhotos(property) {
     const gallery = document.getElementById("edit-photos");
     gallery.innerHTML = "<p class=\"small-label\">Caricamento foto...</p>";
-    const folderPath = `${property.owner_id}/${property.id}`;
+    const folderPath = getStorageFolder(property, currentUser?.id);
 
     const { data, error } = await supabase.storage.from("property-photos").list(folderPath);
     if (error) {
-      gallery.innerHTML = "<p>Errore nel recupero delle foto.</p>";
+      gallery.innerHTML =
+        "<p>Errore nel recupero delle foto. Verifica che il bucket property-photos consenta a utenti autenticati di leggere e caricare.</p>";
       return;
     }
 
@@ -337,7 +366,7 @@
   }
 
   async function deletePhoto(property, fileName) {
-    const folderPath = `${property.owner_id}/${property.id}`;
+    const folderPath = getStorageFolder(property, currentUser?.id);
     const fullPath = `${folderPath}/${fileName}`;
     const { error } = await supabase.storage.from("property-photos").remove([fullPath]);
     if (error) {
