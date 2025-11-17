@@ -326,6 +326,63 @@
     loadExistingPhotos(property);
   }
 
+  function renderOwnerGallery(gallery, photos, property) {
+    if (photos.length === 0) {
+      gallery.innerHTML = "<p class=\"small-label\">Nessuna foto caricata.</p>";
+      return;
+    }
+
+    const first = photos[0];
+    gallery.innerHTML = `
+      <div class="gallery-viewer">
+        <div class="gallery-main">
+          <img id="owner-main-photo" src="${first.url}" alt="${first.label}" loading="lazy" />
+          <div class="gallery-caption">${first.label}</div>
+        </div>
+        <div class="gallery-thumbs" id="owner-thumbs">
+          ${photos
+            .map(
+              (photo, idx) => `
+                <div class="gallery-thumb ${idx === 0 ? "thumb-active" : ""}" data-idx="${idx}" data-delete="${photo.name}">
+                  <img src="${photo.url}" alt="Anteprima foto" loading="lazy" />
+                  <div class="thumb-actions">
+                    ${photo.isCover ? "<span class=\"badge\">Copertina</span>" : ""}
+                    <button class="btn btn-ghost btn-small" data-delete="${photo.name}" type="button">Elimina</button>
+                  </div>
+                </div>
+              `
+            )
+            .join("")}
+        </div>
+      </div>
+    `;
+
+    const mainImg = document.getElementById("owner-main-photo");
+    const caption = gallery.querySelector(".gallery-caption");
+    const thumbs = Array.from(gallery.querySelectorAll(".gallery-thumb"));
+
+    thumbs.forEach((thumb) => {
+      thumb.addEventListener("click", (e) => {
+        const target = e.target;
+        if (target && target.dataset && target.dataset.delete) return;
+        const idx = parseInt(thumb.dataset.idx, 10);
+        const photo = photos[idx];
+        mainImg.src = photo.url;
+        mainImg.alt = photo.label;
+        caption.textContent = photo.label;
+        thumbs.forEach((el) => el.classList.remove("thumb-active"));
+        thumb.classList.add("thumb-active");
+      });
+    });
+
+    gallery.querySelectorAll("[data-delete]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deletePhoto(property, btn.dataset.delete);
+      });
+    });
+  }
+
   async function loadExistingPhotos(property) {
     const gallery = document.getElementById("edit-photos");
     gallery.innerHTML = "<p class=\"small-label\">Caricamento foto...</p>";
@@ -338,31 +395,36 @@
       return;
     }
 
-    if (!data || data.length === 0) {
-      gallery.innerHTML = "<p class=\"small-label\">Nessuna foto caricata.</p>";
-      return;
+    const photos = [];
+
+    if (property.cover_photo_url) {
+      photos.push({
+        url: property.cover_photo_url,
+        name: "cover",
+        label: "Foto di copertina",
+        isCover: true,
+      });
     }
 
-    gallery.innerHTML = data
-      .map((file) => {
-        const path = `${folderPath}/${file.name}`;
-        const { data: publicData } = supabase.storage.from("property-photos").getPublicUrl(path);
-        const isCover = property.cover_photo_url && property.cover_photo_url.includes(file.name);
-        return `
-          <figure class="property-photo">
-            <img src="${publicData.publicUrl}" alt="Foto esistente" loading="lazy" />
-            <figcaption>
-              ${isCover ? "<strong>Copertina</strong> · " : ""}${file.name}<br>
-              <button class="btn btn-ghost" data-delete="${file.name}" style="margin-top: 6px;">Elimina</button>
-            </figcaption>
-          </figure>
-        `;
-      })
-      .join("");
+    if (data) {
+      data
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach((file) => {
+          const path = `${folderPath}/${file.name}`;
+          const { data: publicData } = supabase.storage.from("property-photos").getPublicUrl(path);
+          const already = photos.some((ph) => ph.url === publicData.publicUrl);
+          if (!already) {
+            photos.push({
+              url: publicData.publicUrl,
+              name: file.name,
+              label: file.name,
+              isCover: property.cover_photo_url ? property.cover_photo_url.includes(file.name) : false,
+            });
+          }
+        });
+    }
 
-    gallery.querySelectorAll("[data-delete]").forEach((btn) => {
-      btn.addEventListener("click", () => deletePhoto(property, btn.dataset.delete));
-    });
+    renderOwnerGallery(gallery, photos, property);
   }
 
   async function deletePhoto(property, fileName) {

@@ -112,6 +112,50 @@
     messageEl.innerHTML = "<p>Apri <strong>alloggi.html</strong>, scegli un annuncio pubblicato e verrai portato qui con tutte le informazioni e le foto.</p>";
   }
 
+  function renderGallery(photos) {
+    if (photos.length === 0) {
+      galleryEl.innerHTML = "<p>Il proprietario non ha ancora caricato foto.</p>";
+      return;
+    }
+
+    const first = photos[0];
+    galleryEl.innerHTML = `
+      <div class="gallery-viewer">
+        <div class="gallery-main">
+          <img id="gallery-main-img" src="${first.url}" alt="${first.name}" loading="lazy" />
+          <div class="gallery-caption">${first.name}</div>
+        </div>
+        <div class="gallery-thumbs" id="gallery-thumbs">
+          ${photos
+            .map(
+              (photo, idx) => `
+                <button class="gallery-thumb ${idx === 0 ? "thumb-active" : ""}" data-idx="${idx}" aria-label="${photo.name}">
+                  <img src="${photo.url}" alt="Anteprima foto" loading="lazy" />
+                </button>
+              `
+            )
+            .join("")}
+        </div>
+      </div>
+    `;
+
+    const mainImg = document.getElementById("gallery-main-img");
+    const caption = galleryEl.querySelector(".gallery-caption");
+    const thumbs = Array.from(document.querySelectorAll(".gallery-thumb"));
+
+    thumbs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const index = parseInt(btn.dataset.idx, 10);
+        const photo = photos[index];
+        mainImg.src = photo.url;
+        mainImg.alt = photo.name;
+        caption.textContent = photo.name;
+        thumbs.forEach((el) => el.classList.remove("thumb-active"));
+        btn.classList.add("thumb-active");
+      });
+    });
+  }
+
   async function loadGallery(property) {
     galleryEl.innerHTML = "<p>Caricamento foto...</p>";
     const folderPath = getStorageFolder(property);
@@ -132,33 +176,21 @@
       return;
     }
 
-    data.forEach((file) => {
-      const path = `${folderPath}/${file.name}`;
-      const { data: publicData } = supabase.storage
-        .from("property-photos")
-        .getPublicUrl(path);
+    data
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .forEach((file) => {
+        const path = `${folderPath}/${file.name}`;
+        const { data: publicData } = supabase.storage
+          .from("property-photos")
+          .getPublicUrl(path);
 
-      const alreadyAdded = photos.some((ph) => ph.url === publicData.publicUrl);
-      if (!alreadyAdded) {
-        photos.push({ url: publicData.publicUrl, name: file.name });
-      }
-    });
+        const alreadyAdded = photos.some((ph) => ph.url === publicData.publicUrl);
+        if (!alreadyAdded) {
+          photos.push({ url: publicData.publicUrl, name: file.name });
+        }
+      });
 
-    if (photos.length === 0) {
-      galleryEl.innerHTML = "<p>Il proprietario non ha ancora caricato foto.</p>";
-      return;
-    }
-
-    galleryEl.innerHTML = photos
-      .map(
-        (photo) => `
-        <figure class="property-photo">
-          <img src="${photo.url}" alt="Foto dell'alloggio" loading="lazy" />
-          <figcaption>${photo.name}</figcaption>
-        </figure>
-      `
-      )
-      .join("");
+    renderGallery(photos);
   }
 
   async function loadProperty() {
