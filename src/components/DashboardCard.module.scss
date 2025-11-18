@@ -1,0 +1,29 @@
+.card {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.1rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+h3 {
+  margin: 0.25rem 0;
+  font-size: 1.25rem;
+}
+
+.description {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}

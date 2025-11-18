@@ -1,0 +1,43 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stays {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.stayCard {
+  background: #fff;
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.kicker {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1rem;
+  color: var(--text-muted);
+}
+
+.description {
+  margin: 0.25rem 0;
+  color: var(--text-muted);
+}
+
+.badge {
+  align-self: flex-start;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(201, 147, 52, 0.12);
+  color: var(--gold);
+  font-weight: 700;
+}

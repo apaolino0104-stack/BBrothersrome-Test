@@ -1,0 +1,38 @@
+.hero {
+  position: relative;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(120deg, rgba(73, 39, 16, 0.9), rgba(201, 147, 52, 0.85)),
+    url('https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600&q=80') center/cover;
+  color: #fff;
+  padding: clamp(2rem, 5vw, 4rem);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.overlay {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+}
+
+.kicker {
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.14rem;
+  font-weight: 700;
+  color: #f9e7c5;
+  margin: 0 0 0.5rem;
+}
+
+h1 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.15;
+}
+
+.subtitle {
+  margin: 0 0 1.5rem;
+  font-size: 1.05rem;
+  max-width: 620px;
+  color: #f5eee4;
+}
