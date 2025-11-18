@@ -4,20 +4,20 @@
   <meta charset="UTF-8" />
   <title>Servizio extra – B&Brother’s</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
 </head>
 <body>
 <header class="site-header">
   <div class="container header-inner fade-in">
-    <a href="index.html" class="logo">
-      <img src="logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+    <a href="../index.html" class="logo">
+      <img src="../assets/images/logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
       <div class="logo-text">
         <span class="logo-title">B&Brother’s</span>
         <span class="logo-subtitle">Gestione servizi extra</span>
       </div>
     </a>
     <nav class="main-nav"></nav>
-    <a href="fornitore-dashboard.html" class="btn btn-ghost">Torna alla dashboard</a>
+    <a href="dashboard.html" class="btn btn-ghost">Torna alla dashboard</a>
   </div>
 </header>
 
@@ -100,14 +100,14 @@
   async function ensureAuth() {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
-      window.location.href = "fornitore-login.html";
+      window.location.href = "login.html";
       return null;
     }
     currentUser = data.user;
     provider = await fetchProvider(currentUser.id);
     if (!provider) {
       await supabase.auth.signOut();
-      window.location.href = "fornitore-login.html";
+      window.location.href = "login.html";
       return null;
     }
     return provider;
@@ -229,7 +229,7 @@
       }
     }
 
-    window.location.href = "fornitore-dashboard.html?saved=1";
+    window.location.href = "dashboard.html?saved=1";
   }
 
   document.getElementById("add-option")?.addEventListener("click", () => addOptionRow());

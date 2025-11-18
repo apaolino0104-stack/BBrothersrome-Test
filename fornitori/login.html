@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <title>Login fornitori – B&Brother’s</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
 </head>
 <body>
 <header class="site-header">
   <div class="container header-inner fade-in">
-    <a href="index.html" class="logo">
-      <img src="logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+    <a href="../index.html" class="logo">
+      <img src="../assets/images/logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
       <div class="logo-text">
         <span class="logo-title">B&Brother’s</span>
         <span class="logo-subtitle">Accesso fornitori</span>
@@ -70,7 +70,7 @@
     if (data?.user) {
       const provider = await fetchProvider(data.user.id);
       if (provider) {
-        window.location.href = "fornitore-dashboard.html";
+        window.location.href = "dashboard.html";
       }
     }
   }
@@ -102,7 +102,7 @@
     }
 
     msgEl.textContent = "Accesso riuscito, reindirizzamento...";
-    window.location.href = "fornitore-dashboard.html";
+    window.location.href = "dashboard.html";
   }
 
   form.addEventListener("submit", handleLogin);

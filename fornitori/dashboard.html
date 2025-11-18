@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <title>Dashboard fornitori – B&Brother’s</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
 </head>
 <body>
 <header class="site-header">
   <div class="container header-inner fade-in">
-    <a href="index.html" class="logo">
-      <img src="logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+    <a href="../index.html" class="logo">
+      <img src="../assets/images/logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
       <div class="logo-text">
         <span class="logo-title">B&Brother’s</span>
         <span class="logo-subtitle">Dashboard fornitori</span>
@@ -28,7 +28,7 @@
       <h1>Gestisci i servizi che offri agli ospiti</h1>
       <p class="page-hero-subtitle" id="provider-summary">Caricamento profilo fornitore...</p>
       <div class="dashboard-actions">
-        <a href="fornitore-servizio.html" class="btn btn-primary">+ Aggiungi nuovo servizio</a>
+    <a href="servizio.html" class="btn btn-primary">+ Aggiungi nuovo servizio</a>
         <span id="dashboard-message" class="note"></span>
       </div>
     </div>
@@ -78,14 +78,14 @@
   async function ensureAuth() {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
-      window.location.href = "fornitore-login.html";
+      window.location.href = "login.html";
       return null;
     }
     currentUser = data.user;
     provider = await fetchProvider(currentUser.id);
     if (!provider) {
       await supabase.auth.signOut();
-      window.location.href = "fornitore-login.html";
+      window.location.href = "login.html";
       return null;
     }
     providerSummary.textContent = `Ciao ${provider.name || ""}, gestisci qui i tuoi servizi attivi.`;
@@ -120,7 +120,7 @@
             <p>${svc.description || ""}</p>
             <p class="small-label">Opzioni disponibili: ${optCount}</p>
             <div class="card-actions">
-              <a class="btn btn-outline-sm" href="fornitore-servizio.html?service_id=${svc.id}">Modifica</a>
+              <a class="btn btn-outline-sm" href="servizio.html?service_id=${svc.id}">Modifica</a>
               <button class="btn btn-ghost" data-toggle="${svc.id}" data-active="${svc.is_active}">
                 ${svc.is_active ? "Disattiva" : "Attiva"}
               </button>
@@ -176,7 +176,7 @@
 
   document.getElementById("logout-btn")?.addEventListener("click", async () => {
     await supabase.auth.signOut();
-    window.location.href = "fornitore-login.html";
+    window.location.href = "login.html";
   });
 
   init();
