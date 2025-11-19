@@ -535,6 +535,14 @@ delay-3 { animation-delay: 0.28s; }
   box-shadow: 0 14px 30px rgba(0,0,0,0.12);
 }
 
+.filter-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 280px;
+  min-width: 220px;
+}
+
 .filter-label {
   font-size: 12px;
   text-transform: uppercase;
@@ -542,13 +550,21 @@ delay-3 { animation-delay: 0.28s; }
   color: var(--text-muted);
 }
 
-.filter-note {
-  font-size: 14px;
-  color: var(--text-main);
+.filter-search-input {
+  flex: 1;
+  border-radius: 999px;
+  border: 1px solid rgba(207,191,162,0.9);
   background: #fff7eb;
-  border-radius: var(--radius-sm);
-  padding: 6px 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  font-size: 14px;
+  padding: 8px 14px;
+  color: var(--text-main);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08) inset;
+}
+
+.filter-search-input:focus {
+  outline: 2px solid rgba(201, 147, 52, 0.25);
+  border-color: var(--gold);
+  background: #fffdfa;
 }
 
 .dashboard-bar {
