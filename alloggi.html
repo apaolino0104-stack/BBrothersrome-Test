@@ -43,8 +43,16 @@
 <section class="section section-light">
   <div class="container">
     <div class="filter-bar fade-in delay-1">
-      <span class="filter-label">Suggerimento:</span>
-      <span class="filter-note">clicca su un alloggio per aprire la scheda completa con tutte le foto e i dettagli.</span>
+      <div class="filter-search" role="search">
+        <label class="filter-label" for="alloggi-search">Cerca:</label>
+        <input
+          type="search"
+          id="alloggi-search"
+          class="filter-search-input"
+          placeholder="Cerca un alloggio per nome o zona"
+          aria-label="Cerca un alloggio per nome o zona"
+        />
+      </div>
       <span class="filter-label">Filtra per:</span>
       <select class="filter-select">
         <option>Tutte le zone</option>
