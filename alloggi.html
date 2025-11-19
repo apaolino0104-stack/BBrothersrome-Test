@@ -54,24 +54,14 @@
         />
       </div>
       <span class="filter-label">Filtra per:</span>
-      <select class="filter-select">
-        <option>Tutte le zone</option>
-        <option>Centro storico</option>
-        <option>Trastevere</option>
-        <option>San Pietro</option>
-        <option>Monti</option>
+      <select id="filter-zone" class="filter-select">
+        <option value="">Tutte le zone</option>
       </select>
-      <select class="filter-select">
-        <option>Numero ospiti</option>
-        <option>Fino a 2</option>
-        <option>Fino a 4</option>
-        <option>Fino a 6+</option>
+      <select id="filter-guests" class="filter-select">
+        <option value="">Tutti i posti letto</option>
       </select>
-      <select class="filter-select">
-        <option>Tipologia</option>
-        <option>Loft</option>
-        <option>Family</option>
-        <option>Luxury</option>
+      <select id="filter-type" class="filter-select">
+        <option value="">Tutte le tipologie</option>
       </select>
     </div>
 
@@ -108,31 +98,43 @@
     return data?.publicUrl || null;
   }
 
-  async function loadPublicProperties() {
-    const listEl = document.getElementById("public-properties");
-    const noteEl = document.getElementById("public-note");
+  const listEl = document.getElementById("public-properties");
+  const noteEl = document.getElementById("public-note");
+  const searchInput = document.getElementById("alloggi-search");
+  const zoneSelect = document.getElementById("filter-zone");
+  const guestsSelect = document.getElementById("filter-guests");
+  const typeSelect = document.getElementById("filter-type");
+
+  const state = {
+    properties: [],
+    filters: {
+      search: "",
+      zone: "",
+      guests: "",
+      type: "",
+    },
+  };
+
+  function getPropertyType(prop) {
+    return (prop.property_type || prop.typology || prop.type || "").trim();
+  }
+
+  function renderProperties(list) {
     if (!listEl) return;
-    listEl.innerHTML = "<p>Caricamento alloggi...</p>";
 
-    const { data, error } = await supabase
-      .from("properties")
-      .select("*, property_photos(path,is_cover,sort_order)")
-      .eq("status", "published")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error(error);
-      listEl.innerHTML = "<p>Errore nel caricamento degli alloggi.</p>";
+    if (!list || list.length === 0) {
+      listEl.innerHTML = state.properties.length
+        ? "<p>Nessun alloggio corrisponde ai filtri attivi.</p>"
+        : "<p>Nessun alloggio pubblicato al momento.</p>";
+      if (noteEl) {
+        noteEl.textContent = state.properties.length
+          ? "Modifica i filtri o prova una nuova ricerca."
+          : "Gli alloggi saranno visibili man mano che i proprietari li pubblicano.";
+      }
       return;
     }
 
-    if (!data || data.length === 0) {
-      listEl.innerHTML = "<p>Nessun alloggio pubblicato al momento.</p>";
-      if (noteEl) noteEl.textContent = "Gli alloggi saranno visibili man mano che i proprietari li pubblicano.";
-      return;
-    }
-
-    listEl.innerHTML = data
+    listEl.innerHTML = list
       .map((p) => {
         const photoList = Array.isArray(p.property_photos) ? [...p.property_photos] : [];
         const sortedPhotos = photoList.sort((a, b) => {
@@ -161,9 +163,154 @@
         </a>`;
       })
       .join("");
+
+    if (noteEl) {
+      noteEl.textContent = `Mostrati ${list.length} di ${state.properties.length} alloggi disponibili.`;
+    }
+  }
+
+  function renderOptions(selectEl, values, placeholder, formatFn = (value) => ({ value, label: value })) {
+    if (!selectEl) return;
+    const uniqueValues = Array.from(new Set(values.filter(Boolean)));
+    if (uniqueValues.length === 0) {
+      selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+      return;
+    }
+    const options = [`<option value="">${placeholder}</option>`];
+    uniqueValues.forEach((value) => {
+      const { value: optionValue = value, label = value } = formatFn(value) || {};
+      options.push(`<option value="${optionValue}">${label}</option>`);
+    });
+    selectEl.innerHTML = options.join("");
+  }
+
+  function restoreSelection(selectEl, previousValue, allowedValues) {
+    if (!selectEl) return "";
+    if (previousValue && allowedValues.some((value) => value.toLowerCase() === previousValue.toLowerCase())) {
+      selectEl.value = previousValue;
+      return previousValue;
+    }
+    selectEl.value = "";
+    return "";
+  }
+
+  function populateFilterOptions(properties) {
+    const previousSelections = {
+      zone: zoneSelect?.value || "",
+      guests: guestsSelect?.value || "",
+      type: typeSelect?.value || "",
+    };
+
+    const zones = Array.from(
+      new Set(
+        properties
+          .map((p) => (p.zone || "").trim())
+          .filter((value) => value.length > 0)
+      )
+    ).sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" }));
+
+    const guests = Array.from(
+      new Set(
+        properties
+          .map((p) => (typeof p.guests === "number" ? p.guests : parseInt(p.guests, 10)))
+          .filter((value) => !Number.isNaN(value))
+      )
+    )
+      .sort((a, b) => a - b)
+      .map((value) => `${value}`);
+
+    const types = Array.from(
+      new Set(
+        properties
+          .map((p) => getPropertyType(p))
+          .filter((value) => value.length > 0)
+      )
+    ).sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" }));
+
+    renderOptions(zoneSelect, zones, "Tutte le zone");
+    renderOptions(
+      guestsSelect,
+      guests,
+      "Tutti i posti letto",
+      (value) => ({
+        value,
+        label: parseInt(value, 10) === 1 ? `${value} ospite` : `${value} ospiti`,
+      })
+    );
+    renderOptions(typeSelect, types, "Tutte le tipologie");
+
+    state.filters.zone = restoreSelection(zoneSelect, previousSelections.zone, zones);
+    state.filters.guests = restoreSelection(guestsSelect, previousSelections.guests, guests);
+    state.filters.type = restoreSelection(typeSelect, previousSelections.type, types);
+  }
+
+  function matchesFilters(property) {
+    const { search, zone, guests, type } = state.filters;
+    const normalizedSearch = search.trim().toLowerCase();
+    const matchesSearch = !normalizedSearch
+      || [property.title, property.zone, property.short_description]
+        .some((field) => (field || "").toLowerCase().includes(normalizedSearch));
+
+    const matchesZone = !zone || (property.zone || "").toLowerCase() === zone.toLowerCase();
+    const matchesGuests = !guests || String(property.guests || "") === guests;
+    const propType = getPropertyType(property);
+    const matchesType = !type || propType.toLowerCase() === type.toLowerCase();
+
+    return matchesSearch && matchesZone && matchesGuests && matchesType;
+  }
+
+  function applyFilters() {
+    if (!state.properties.length) {
+      renderProperties([]);
+      return;
+    }
+
+    const filtered = state.properties.filter((prop) => matchesFilters(prop));
+    renderProperties(filtered);
+  }
+
+  async function loadPublicProperties() {
+    if (!listEl) return;
+    listEl.innerHTML = "<p>Caricamento alloggi...</p>";
+
+    const { data, error } = await supabase
+      .from("properties")
+      .select("*, property_photos(path,is_cover,sort_order)")
+      .eq("status", "published")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      listEl.innerHTML = "<p>Errore nel caricamento degli alloggi.</p>";
+      return;
+    }
+
+    state.properties = Array.isArray(data) ? data : [];
+    populateFilterOptions(state.properties);
+    applyFilters();
   }
 
   loadPublicProperties();
+
+  searchInput?.addEventListener("input", (event) => {
+    state.filters.search = event.target.value;
+    applyFilters();
+  });
+
+  zoneSelect?.addEventListener("change", (event) => {
+    state.filters.zone = event.target.value;
+    applyFilters();
+  });
+
+  guestsSelect?.addEventListener("change", (event) => {
+    state.filters.guests = event.target.value;
+    applyFilters();
+  });
+
+  typeSelect?.addEventListener("change", (event) => {
+    state.filters.type = event.target.value;
+    applyFilters();
+  });
 </script>
 
 </body>
