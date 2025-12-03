@@ -112,7 +112,7 @@
     messageEl.innerHTML = "<p>Apri <strong>alloggi.html</strong>, scegli un annuncio pubblicato e verrai portato qui con tutte le informazioni e le foto.</p>";
   }
 
-  function renderGallery(photos) {
+  function renderGallery(photos, propertyTitle) {
     if (photos.length === 0) {
       galleryEl.innerHTML = "<p>Il proprietario non ha ancora caricato foto.</p>";
       return;
@@ -122,15 +122,21 @@
     galleryEl.innerHTML = `
       <div class="gallery-viewer">
         <div class="gallery-main">
-          <img id="gallery-main-img" src="${first.url}" alt="${first.name}" loading="lazy" />
-          <div class="gallery-caption">${first.name}</div>
+          <button class="gallery-nav gallery-nav-prev" aria-label="Foto precedente">❮</button>
+          <img
+            id="gallery-main-img"
+            src="${first.url}"
+            alt="${propertyTitle || "Foto dell'alloggio"}"
+            loading="lazy"
+          />
+          <button class="gallery-nav gallery-nav-next" aria-label="Foto successiva">❯</button>
         </div>
         <div class="gallery-thumbs" id="gallery-thumbs">
           ${photos
             .map(
               (photo, idx) => `
-                <button class="gallery-thumb ${idx === 0 ? "thumb-active" : ""}" data-idx="${idx}" aria-label="${photo.name}">
-                  <img src="${photo.url}" alt="Anteprima foto" loading="lazy" />
+                <button class="gallery-thumb ${idx === 0 ? "thumb-active" : ""}" data-idx="${idx}" aria-label="Foto ${idx + 1}">
+                  <img src="${photo.url}" alt="Anteprima foto ${idx + 1}" loading="lazy" />
                 </button>
               `
             )
@@ -140,23 +146,39 @@
     `;
 
     const mainImg = document.getElementById("gallery-main-img");
-    const caption = galleryEl.querySelector(".gallery-caption");
+    const prevBtn = galleryEl.querySelector(".gallery-nav-prev");
+    const nextBtn = galleryEl.querySelector(".gallery-nav-next");
     const thumbs = Array.from(document.querySelectorAll(".gallery-thumb"));
+    let currentIndex = 0;
+
+    function showPhoto(index) {
+      const photo = photos[index];
+      if (!photo) return;
+      mainImg.src = photo.url;
+      mainImg.alt = propertyTitle || "Foto dell'alloggio";
+      thumbs.forEach((el) => el.classList.remove("thumb-active"));
+      thumbs[index]?.classList.add("thumb-active");
+      currentIndex = index;
+    }
+
+    function showNext(step) {
+      const count = photos.length;
+      const target = (currentIndex + step + count) % count;
+      showPhoto(target);
+    }
 
     thumbs.forEach((btn) => {
       btn.addEventListener("click", () => {
         const index = parseInt(btn.dataset.idx, 10);
-        const photo = photos[index];
-        mainImg.src = photo.url;
-        mainImg.alt = photo.name;
-        caption.textContent = photo.name;
-        thumbs.forEach((el) => el.classList.remove("thumb-active"));
-        btn.classList.add("thumb-active");
+        showPhoto(index);
       });
     });
+
+    prevBtn?.addEventListener("click", () => showNext(-1));
+    nextBtn?.addEventListener("click", () => showNext(1));
   }
 
-  async function loadGallery(photoRows, coverFallback) {
+  async function loadGallery(photoRows, coverFallback, propertyTitle) {
     galleryEl.innerHTML = "<p>Caricamento foto...</p>";
     const orderedRows = Array.isArray(photoRows)
       ? [...photoRows].sort((a, b) => {
@@ -174,7 +196,7 @@
       photos.push({ url: coverFallback, name: "Foto di copertina" });
     }
 
-    renderGallery(photos);
+    renderGallery(photos, propertyTitle);
   }
 
   async function loadProperty() {
@@ -212,7 +234,7 @@
       `Ciao, vorrei informazioni sull'alloggio "${property.title}"`
     )}`;
 
-    loadGallery(property.property_photos || [], property.cover_photo_url);
+    loadGallery(property.property_photos || [], property.cover_photo_url, property.title);
   }
 
   loadProperty();
