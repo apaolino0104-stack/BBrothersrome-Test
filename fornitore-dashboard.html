@@ -107,57 +107,42 @@
       if (!servicesEl) return;
       if (!list || list.length === 0) {
         servicesEl.innerHTML = "";
-        servicesNote.textContent = "Nessun servizio presente. Aggiungine uno nuovo per iniziare.";
+        servicesNote.textContent = "Non hai ancora attivo nessun profilo servizio. Clicca su '+ Aggiungi nuovo servizio' per iniziare.";
         return;
       }
 
       servicesNote.textContent = "";
       servicesEl.innerHTML = list
         .map((svc) => {
-          const options = Array.isArray(svc.extra_service_options) ? svc.extra_service_options : [];
-          const activeOptions = options.filter((opt) => opt.is_active !== false);
-          const optCount = activeOptions.length || options.length;
+          // Determine icon based on service_type
+          let icon = "📋";
+          if (svc.service_type === 'guide') icon = "🗺️";
+          if (svc.service_type === 'chef') icon = "🍳";
+          if (svc.service_type === 'driver') icon = "🚗";
+          if (svc.service_type === 'transfer') icon = "🚐";
+
           return `
-          <div class="card service-card lift-on-hover">
-            <div class="card-header-row">
+          <div class="card service-card lift-on-hover scale-on-active" style="display:flex; flex-direction:column;">
+            <div class="card-header-row" style="align-items:flex-start;">
+              <div style="font-size:24px; margin-right:12px;">${icon}</div>
               <div>
-                <p class="eyebrow">${svc.category || "Generale"}</p>
-                <h3>${svc.title}</h3>
+                <p class="eyebrow" style="margin-bottom:4px;">${svc.service_type ? svc.service_type.toUpperCase() : "SERVIZIO"}</p>
+                <h3 style="margin-bottom:4px;">${svc.title}</h3>
+                <span class="badge ${svc.is_active ? "badge-strong" : "badge-muted"}">
+                  ${svc.is_active ? "Pubblicato" : "Bozza / Nascosto"}
+                </span>
               </div>
-              <span class="badge ${svc.is_active ? "badge-strong" : "badge-muted"}">
-                ${svc.is_active ? "Attivo" : "Disattivato"}
-              </span>
             </div>
-            <p>${svc.description || ""}</p>
-            <p class="small-label">Opzioni disponibili: ${optCount}</p>
-            <div class="card-actions">
-              <a class="btn btn-outline-sm" href="fornitore-servizio.html?service_id=${svc.id}">Modifica</a>
-              <button class="btn btn-ghost" data-toggle="${svc.id}" data-active="${svc.is_active}">
-                ${svc.is_active ? "Disattiva" : "Attiva"}
-              </button>
+            
+            <p style="margin-top:12px; flex-grow:1; color:var(--text-muted); font-size:14px;">${svc.description || "Nessuna descrizione inserita."}</p>
+
+            <div class="card-actions" style="margin-top:16px; border-top:1px solid rgba(0,0,0,0.05); padding-top:12px;">
+              <a class="btn btn-outline-sm btn-full" href="fornitore-servizio.html?service_id=${svc.id}">Gestisci Profilo</a>
             </div>
           </div>
         `;
         })
         .join("");
-
-      document.querySelectorAll("[data-toggle]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const id = btn.dataset.toggle;
-          const current = btn.dataset.active === "true";
-          const { error } = await supabase
-            .from("extra_services")
-            .update({ is_active: !current })
-            .eq("id", id)
-            .eq("provider_id", provider.id);
-          if (error) {
-            dashMessage.textContent = "Errore nel cambio stato: " + error.message;
-          } else {
-            dashMessage.textContent = "Stato aggiornato.";
-            loadServices();
-          }
-        });
-      });
     }
 
     async function loadServices() {

@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Servizio extra – B&Brother’s</title>
+  <title>Editor Profilo Partner – B&Brother’s</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
@@ -11,246 +11,338 @@
 <body>
   <header class="site-header">
     <div class="container header-inner fade-in">
-      <a href="index.html" class="logo">
-        <img src="assets/images/logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+      <div class="logo">
+        <img src="assets/images/logo-bbrothers.png" alt="Logo" class="logo-img" />
         <div class="logo-text">
-          <span class="logo-title">B&Brother’s</span>
-          <span class="logo-subtitle">Gestione servizi extra</span>
+          <span class="logo-title">Partner<span style="color:var(--gold)">Portal</span></span>
+          <span class="logo-subtitle">Gestione Profilo</span>
         </div>
-      </a>
-      <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Apri il menu" />
-      <label for="nav-toggle" class="menu-toggle">
-        <span class="menu-toggle-box">
-          <span class="menu-toggle-line"></span>
-          <span class="menu-toggle-line"></span>
-          <span class="menu-toggle-line"></span>
-        </span>
-        <span class="menu-toggle-text">Menu</span>
-      </label>
-      <nav class="main-nav"></nav>
-      <a href="fornitore-dashboard.html" class="btn btn-ghost">Torna alla dashboard</a>
+      </div>
+      <a href="fornitore-dashboard.html" class="btn btn-ghost">Torna alla Dashboard</a>
     </div>
   </header>
 
-  <main>
-    <section class="page-hero">
-      <div class="container fade-in">
-        <p class="eyebrow" id="mode-label">Nuovo servizio</p>
-        <h1 id="page-title">Crea o modifica un servizio</h1>
-        <p class="page-hero-subtitle">Inserisci i dettagli del servizio e le opzioni acquistabili dagli ospiti.</p>
-      </div>
-    </section>
+  <main style="padding: 40px 0;">
+    <div class="container">
+      <div class="grid-cols-12">
 
-    <section class="section section-light">
-      <div class="container">
-        <form id="service-form" class="stacked-form">
-          <div class="two-cols">
-            <label>
-              Titolo
-              <input type="text" id="svc-title" required />
-            </label>
-            <label>
-              Categoria
-              <input type="text" id="svc-category" placeholder="Trasporti, cucina, shooting..." />
-            </label>
-          </div>
-          <label>
-            Descrizione
-            <textarea id="svc-desc" rows="3" placeholder="Cosa offri, come funziona, tempi..."></textarea>
-          </label>
-          <label class="checkbox-inline">
-            <input type="checkbox" id="svc-active" checked /> Servizio attivo e visibile agli ospiti
-          </label>
+        <!-- LEFT COLUMN: EDITOR -->
+        <div class="col-span-8">
 
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Opzioni del servizio</p>
-              <h3>Tariffe e disponibilità</h3>
+          <!-- Intro Section -->
+          <div class="form-section">
+            <h1 style="margin-bottom:8px;">Crea il tuo profilo professionale</h1>
+            <p style="color:var(--text-muted); margin-bottom:24px;">Scegli la categoria del servizio che offri e compila
+              i dettagli.</p>
+
+            <div class="service-selector">
+              <div class="service-type-card active" data-type="guide" onclick="setServiceType('guide')">
+                <div class="service-icon">🗺️</div>
+                <span style="font-weight:600; font-size:14px;">Guida Turistica</span>
+              </div>
+              <div class="service-type-card" data-type="chef" onclick="setServiceType('chef')">
+                <div class="service-icon">🍳</div>
+                <span style="font-weight:600; font-size:14px;">Chef a Domicilio</span>
+              </div>
+              <div class="service-type-card" data-type="driver" onclick="setServiceType('driver')">
+                <div class="service-icon">🚗</div>
+                <span style="font-weight:600; font-size:14px;">Autista Privato</span>
+              </div>
+              <div class="service-type-card" data-type="transfer" onclick="setServiceType('transfer')">
+                <div class="service-icon">🚐</div>
+                <span style="font-weight:600; font-size:14px;">Transfer / NCC</span>
+              </div>
             </div>
-            <button type="button" class="btn btn-outline-sm" id="add-option">+ Aggiungi opzione</button>
+
+            <div class="two-cols" style="margin-bottom:16px;">
+              <div class="form-group">
+                <label>Nome Completo (o Azienda)</label>
+                <input type="text" id="svc-title" class="form-input" placeholder="Es. Mario Rossi o Luxury Transfers"
+                  oninput="updatePreview()" />
+              </div>
+              <div class="form-group">
+                <label>Tagline (Titolo breve)</label>
+                <input type="text" id="svc-tagline" class="form-input"
+                  placeholder="Es. Esperienze autentiche in Costiera" oninput="updatePreview()" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Descrizione del servizio</label>
+              <textarea id="svc-desc" rows="4" class="form-textarea"
+                placeholder="Descrivi chi sei e la tua esperienza..." oninput="updatePreview()"></textarea>
+            </div>
+
+            <div class="form-group" style="margin-top:16px;">
+              <label>Lingue Parlate / Dettagli Extra</label>
+              <input type="text" id="svc-extra-text" class="form-input" placeholder="Es. Italiano, Inglese, Spagnolo"
+                oninput="updatePreview()" />
+            </div>
           </div>
 
-          <div id="options-container" class="options-grid"></div>
+          <!-- DYNAMIC SECTION -->
+          <div class="form-section border-l-accent" id="dynamic-section">
+            <h2 id="dynamic-title" style="font-size:20px; margin-bottom:16px;">Dettagli Servizio</h2>
+            <div id="dynamic-content">
+              <!-- Content injected by JS -->
+            </div>
+          </div>
 
-          <button type="submit" class="btn btn-primary btn-full">Salva servizio</button>
-          <p id="form-message" class="small-label"></p>
-        </form>
+          <!-- SAVE ACTIONS -->
+          <div style="text-align:right;">
+            <span id="save-msg" style="margin-right:12px; font-size:14px; color:var(--text-muted)"></span>
+            <button class="btn btn-primary" onclick="saveService()">Salva e Pubblica Profilo</button>
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: PREVIEW -->
+        <div class="col-span-4" style="display:none;" id="preview-column">
+          <div class="preview-sticky">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:12px; font-weight:700; color:var(--text-muted); letter-spacing:1px;">ANTEPRIMA
+                CARD</span>
+              <span class="badge badge-strong" style="background:#dcfce7; color:#166534;">Live View</span>
+            </div>
+
+            <div class="live-preview-card">
+              <div class="preview-image-placeholder">
+                <span style="opacity:0.3; font-size:48px;">📷</span>
+                <div class="preview-tag" id="prev-type">GUIDE</div>
+              </div>
+              <div class="preview-body">
+                <div class="preview-meta">
+                  <div>
+                    <h3 style="font-size:18px; margin:0;" id="prev-title">Titolo Servizio</h3>
+                    <p style="font-size:12px; color:var(--text-muted); margin:0;" id="prev-tagline">Tagline...</p>
+                  </div>
+                  <div class="preview-rating">5.0 ★</div>
+                </div>
+
+                <p style="font-size:13px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;" id="prev-desc">
+                  La descrizione del tuo servizio apparirà qui...
+                </p>
+
+                <div class="preview-tags-row" id="prev-extras">
+                  <!-- Dynamic tags -->
+                </div>
+
+                <button class="btn btn-dark btn-full"
+                  style="font-size:13px; background:var(--dark); color:var(--white);">Contatta</button>
+              </div>
+            </div>
+
+            <div
+              style="margin-top:24px; padding:16px; background:#eff6ff; border-radius:12px; border:1px solid #dbeafe;">
+              <p style="font-size:12px; color:#1e40af; margin:0;">
+                <strong>Nota:</strong> Questa è l'anteprima di come i clienti vedranno la tua scheda. Assicurati che le
+                foto siano di alta qualità.
+              </p>
+            </div>
+          </div>
+        </div>
+
       </div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="container footer-inner">
-      <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
-      <p>WhatsApp: +39 334 507 1226 · Email: a.paolino0104@gmail.com</p>
     </div>
-  </footer>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  </script>
-  <script>
-    let currentUser = null;
-    let provider = null;
-    let serviceId = new URLSearchParams(window.location.search).get("service_id");
 
-    const modeLabel = document.getElementById("mode-label");
-    const pageTitle = document.getElementById("page-title");
-    const messageEl = document.getElementById("form-message");
-    const optionsContainer = document.getElementById("options-container");
+    let state = {
+      currentUser: null,
+      provider: null,
+      serviceId: new URLSearchParams(window.location.search).get("service_id"),
+      type: 'guide', // default
+      details: {}
+    };
 
-    async function fetchProvider(userId) {
-      const { data, error } = await supabaseClient.from("providers").select("*").eq("user_id", userId).single();
-      if (error || !data) return null;
-      return data;
-    }
+    // UI ELEMENTS
+    const els = {
+      typeCards: document.querySelectorAll('.service-type-card'),
+      dynamicSection: document.getElementById('dynamic-content'),
+      dynamicTitle: document.getElementById('dynamic-title'),
+      previewCol: document.getElementById('preview-column'),
 
-    async function ensureAuth() {
-      const { data, error } = await supabaseClient.auth.getUser();
-      if (error || !data.user) {
-        window.location.href = "fornitore-login.html";
-        return null;
-      }
-      currentUser = data.user;
-      provider = await fetchProvider(currentUser.id);
-      if (!provider) {
-        await supabaseClient.auth.signOut();
-        window.location.href = "fornitore-login.html";
-        return null;
-      }
-      return provider;
-    }
+      // Inputs
+      title: document.getElementById('svc-title'),
+      tagline: document.getElementById('svc-tagline'),
+      desc: document.getElementById('svc-desc'),
+      extra: document.getElementById('svc-extra-text'),
 
-    function addOptionRow(option = {}) {
-      const row = document.createElement("div");
-      row.className = "option-row";
-      row.dataset.id = option.id || "";
-      row.innerHTML = `
-      <div class="two-cols">
-        <label>Nome opzione<input type="text" class="opt-name" value="${option.name || ""}" placeholder="Trasferimento aeroporto" /></label>
-        <label>Prezzo (EUR)<input type="number" step="0.01" class="opt-price" value="${option.price_cents ? option.price_cents / 100 : ""}" /></label>
-      </div>
-      <label>Descrizione breve<input type="text" class="opt-desc" value="${option.description || ""}" placeholder="Dettaglio rapido" /></label>
-      <div class="two-cols">
-        <label>Giorni disponibili<input type="text" class="opt-days" value="${option.available_days || ""}" placeholder="lun,mar,mer" /></label>
-        <label class="checkbox-inline"><input type="checkbox" class="opt-active" ${option.is_active === false ? "" : "checked"} /> Attiva</label>
-      </div>
-    `;
-      optionsContainer.appendChild(row);
-    }
+      // Preview
+      pTitle: document.getElementById('prev-title'),
+      pTagline: document.getElementById('prev-tagline'),
+      pDesc: document.getElementById('prev-desc'),
+      pType: document.getElementById('prev-type'),
+      pExtras: document.getElementById('prev-extras')
+    };
 
-    async function loadService() {
-      if (!serviceId) return addOptionRow();
-      modeLabel.textContent = "Modifica servizio";
-      pageTitle.textContent = "Aggiorna le informazioni del servizio";
-      const { data, error } = await supabaseClient.from("extra_services").select("*").eq("id", serviceId).single();
-      if (error || !data) {
-        messageEl.textContent = "Servizio non trovato.";
-        return;
-      }
-      if (data.provider_id !== provider.id) {
-        messageEl.textContent = "Non puoi modificare questo servizio.";
-        return;
-      }
+    function setServiceType(type) {
+      state.type = type;
 
-      document.getElementById("svc-title").value = data.title || "";
-      document.getElementById("svc-desc").value = data.description || "";
-      document.getElementById("svc-category").value = data.category || "";
-      document.getElementById("svc-active").checked = data.is_active !== false;
-
-      const { data: opts } = await supabase
-        .from("extra_service_options")
-        .select("*")
-        .eq("service_id", serviceId)
-        .order("created_at", { ascending: true });
-
-      optionsContainer.innerHTML = "";
-      (opts || []).forEach((opt) => addOptionRow(opt));
-      if (!opts || opts.length === 0) addOptionRow();
-    }
-
-    function collectOptions(finalServiceId) {
-      const rows = Array.from(document.querySelectorAll(".option-row"));
-      const payloads = [];
-      rows.forEach((row) => {
-        const name = row.querySelector(".opt-name").value.trim();
-        const desc = row.querySelector(".opt-desc").value.trim();
-        const price = parseFloat(row.querySelector(".opt-price").value || "0");
-        const days = row.querySelector(".opt-days").value.trim();
-        const active = row.querySelector(".opt-active").checked;
-        if (!name && !desc) return;
-        payloads.push({
-          id: row.dataset.id || undefined,
-          service_id: finalServiceId,
-          name,
-          description: desc,
-          price_cents: Math.round(price * 100),
-          available_days: days,
-          is_active: active,
-        });
+      // Update UI Cards
+      els.typeCards.forEach(card => {
+        if (card.dataset.type === type) card.classList.add('active');
+        else card.classList.remove('active');
       });
-      return payloads;
+
+      updateDynamicSection();
+      updatePreview();
     }
 
-    async function saveService(e) {
-      e.preventDefault();
-      messageEl.textContent = "Salvataggio in corso...";
-      const title = document.getElementById("svc-title").value.trim();
-      const desc = document.getElementById("svc-desc").value.trim();
-      const category = document.getElementById("svc-category").value.trim();
-      const isActive = document.getElementById("svc-active").checked;
+    function updateDynamicSection() {
+      let html = '';
+      if (state.type === 'guide') {
+        els.dynamicTitle.textContent = "Dettagli Tour & Esperienze";
+        html = `
+             <div class="form-group">
+                <label>Cosa include il tour? (es. Biglietti, Auricolari)</label>
+                <input type="text" class="form-input" placeholder="Elenco breve..." id="dyn-guide-inc" oninput="updatePreview()">
+             </div>
+             <p style="font-size:12px; color:gray;">Nota: Potrai aggiungere i singoli tour specifici dopo aver salvato il profilo.</p>
+          `;
+      } else if (state.type === 'chef') {
+        els.dynamicTitle.textContent = "Cucina & Menù";
+        html = `
+             <div class="two-cols">
+                <div class="form-group">
+                   <label>Stile Cucina</label>
+                   <select class="form-select" id="dyn-chef-style" onchange="updatePreview()">
+                      <option value="Tradizionale">Tradizionale</option>
+                      <option value="Gourmet">Gourmet</option>
+                      <option value="Pesce">Pesce</option>
+                   </select>
+                </div>
+                <div class="form-group">
+                   <label>Prezzo Medio</label>
+                   <select class="form-select">
+                      <option>€30 - €50</option>
+                      <option>€50 - €80</option>
+                      <option>€80+</option>
+                   </select>
+                </div>
+             </div>
+          `;
+      } else if (state.type === 'driver' || state.type === 'transfer') {
+        els.dynamicTitle.textContent = "Flotta & Veicoli";
+        html = `
+             <div class="form-group">
+                <label>Veicolo Principale</label>
+                <select class="form-select" id="dyn-driver-car" onchange="updatePreview()">
+                   <option value="Berlina Lusso">Berlina Lusso (Mercedes E)</option>
+                   <option value="Van 8 Posti">Van 8 Posti</option>
+                   <option value="Bus">Bus GT</option>
+                </select>
+             </div>
+          `;
+      }
+      els.dynamicSection.innerHTML = html;
+    }
 
-      if (!title) {
-        messageEl.textContent = "Inserisci un titolo per il servizio.";
-        return;
+    function updatePreview() {
+      els.pTitle.textContent = els.title.value || "Titolo Servizio";
+      els.pTagline.textContent = els.tagline.value || "Tua tagline qui...";
+      els.pDesc.textContent = els.desc.value || "Descrizione...";
+
+      // Update Type Badge
+      els.pType.textContent = state.type.toUpperCase();
+
+      // Extras Icons
+      let extraHtml = '';
+
+      // Common extra text
+      if (els.extra.value) {
+        extraHtml += `<span class="mini-tag">🗣️ ${els.extra.value}</span>`;
       }
 
-      if (serviceId) {
-        const { error } = await supabase
-          .from("extra_services")
-          .update({ title, description: desc, category, is_active: isActive })
-          .eq("id", serviceId)
-          .eq("provider_id", provider.id);
-        if (error) {
-          messageEl.textContent = "Errore nel salvataggio: " + error.message;
-          return;
+      // Dynamic Specifics
+      if (state.type === 'chef') {
+        const style = document.getElementById('dyn-chef-style')?.value;
+        if (style) extraHtml += `<span class="mini-tag">🍽️ ${style}</span>`;
+      }
+      if (state.type === 'driver') {
+        const car = document.getElementById('dyn-driver-car')?.value;
+        if (car) extraHtml += `<span class="mini-tag">🚘 ${car}</span>`;
+      }
+
+      els.pExtras.innerHTML = extraHtml;
+    }
+
+    async function init() {
+      // Auth Check
+      const { data } = await supabaseClient.auth.getUser();
+      if (!data?.user) return window.location.href = "fornitore-login.html";
+      state.currentUser = data.user;
+
+      const { data: prov } = await supabaseClient.from("providers").select("*").eq("user_id", state.currentUser.id).single();
+      if (!prov) return window.location.href = "fornitore-login.html";
+      state.provider = prov;
+
+      // If editing existing
+      if (state.serviceId) {
+        const { data: svc } = await supabaseClient.from("extra_services").select("*").eq("id", state.serviceId).single();
+        if (svc) {
+          state.type = svc.service_type || 'guide';
+          els.title.value = svc.title || '';
+          els.tagline.value = (state.provider.tagline) || ''; // currently tagging stored on provider? Or service?
+          // Let's assume we copy data to inputs
+          els.desc.value = svc.description || '';
+          setServiceType(state.type);
+          // Trigger update
+          updatePreview();
         }
       } else {
-        const { data, error } = await supabase
-          .from("extra_services")
-          .insert({ title, description: desc, category, is_active: isActive, provider_id: provider.id })
-          .select()
-          .single();
-        if (error || !data) {
-          messageEl.textContent = "Errore nel salvataggio: " + (error?.message || "");
-          return;
-        }
-        serviceId = data.id;
+        setServiceType('guide'); // init default
       }
 
-      const optionPayloads = collectOptions(serviceId);
-      if (optionPayloads.length > 0) {
-        const { error: optError } = await supabaseClient.from("extra_service_options").upsert(optionPayloads);
-        if (optError) {
-          messageEl.textContent = "Servizio salvato, ma alcune opzioni non sono state aggiornate: " + optError.message;
-          return;
-        }
-      }
-
-      window.location.href = "fornitore-dashboard.html?saved=1";
+      // Show preview (desktop)
+      if (window.innerWidth > 900) els.previewCol.style.display = 'block';
     }
 
-    document.getElementById("add-option")?.addEventListener("click", () => addOptionRow());
-    document.getElementById("service-form")?.addEventListener("submit", saveService);
+    async function saveService() {
+      const btn = document.querySelector('button.btn-primary');
+      const msg = document.getElementById('save-msg');
+      btn.disabled = true;
+      msg.textContent = "Salvataggio...";
 
-    (async () => {
-      const ok = await ensureAuth();
-      if (!ok) return;
-      await loadService();
-    })();
+      const payload = {
+        provider_id: state.provider.id,
+        title: els.title.value,
+        description: els.desc.value,
+        service_type: state.type,
+        is_active: true,
+        // We also update provider tagline if changed?
+        // For now let's just save service fields
+        details: {
+          tagline: els.tagline.value,
+          extra_info: els.extra.value
+        }
+      };
+
+      let error = null;
+      if (state.serviceId) {
+        const res = await supabaseClient.from("extra_services").update(payload).eq("id", state.serviceId);
+        error = res.error;
+      } else {
+        const res = await supabaseClient.from("extra_services").insert(payload);
+        error = res.error;
+      }
+
+      if (error) {
+        msg.textContent = "Errore: " + error.message;
+        btn.disabled = false;
+      } else {
+        msg.textContent = "Salvato con successo!";
+        setTimeout(() => window.location.href = "fornitore-dashboard.html?saved=1", 1000);
+      }
+    }
+
+    init();
+
   </script>
 </body>
 
