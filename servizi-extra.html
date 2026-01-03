@@ -70,101 +70,105 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-</script>
-<script>
-  let allServices = [];
-
-  function euros(cents) {
-    const n = Math.round(cents || 0);
-    return (n / 100).toFixed(2).replace(".", ",");
-  }
-
-  function renderServices(list) {
-    const listEl = document.getElementById("services-public");
-    const noteEl = document.getElementById("services-public-note");
-    if (!listEl) return;
-
-    if (!list || list.length === 0) {
-      listEl.innerHTML = "";
-      noteEl.textContent = "Nessun servizio disponibile al momento. Riprova più tardi.";
-      return;
-    }
-
-    noteEl.textContent = "";
-    listEl.innerHTML = list
-      .map((svc) => {
-        const options = (svc.extra_service_options || []).filter((opt) => opt.is_active !== false);
-        const provider = svc.providers || {};
-        return `
-          <div class="card service-card lift-on-hover fade-in">
-            <div class="card-header-row">
-              <div>
-                <p class="eyebrow">${svc.category || "Generale"}</p>
-                <h3>${svc.title}</h3>
+  (() => {
+      const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+      const supabaseClientServiziExtra = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+    
+      let allServices = [];
+    
+      function euros(cents) {
+        const n = Math.round(cents || 0);
+        return (n / 100).toFixed(2).replace(".", ",");
+      }
+    
+      function renderServices(list) {
+        const listEl = document.getElementById("services-public");
+        const noteEl = document.getElementById("services-public-note");
+        if (!listEl) return;
+    
+        if (!list || list.length === 0) {
+          listEl.innerHTML = "";
+          noteEl.textContent = "Nessun servizio disponibile al momento. Riprova più tardi.";
+          return;
+        }
+    
+        noteEl.textContent = "";
+        listEl.innerHTML = list
+          .map((svc) => {
+            const options = (svc.extra_service_options || []).filter((opt) => opt.is_active !== false);
+            const provider = svc.providers || {};
+            return `
+              <div class="card service-card lift-on-hover fade-in">
+                <div class="card-header-row">
+                  <div>
+                    <p class="eyebrow">${svc.category || "Generale"}</p>
+                    <h3>${svc.title}</h3>
+                  </div>
+                  <span class="badge badge-strong">${provider.name || "Partner"}</span>
+                </div>
+                <p>${svc.description || ""}</p>
+                <ul class="service-options">
+                  ${options
+                    .map(
+                      (opt) => `
+                        <li>
+                          <div>
+                            <strong>${opt.name}</strong>
+                            <span class="small-label">${opt.available_days || "Giorni su richiesta"}</span>
+                            <p>${opt.description || ""}</p>
+                          </div>
+                          <span class="badge">€ ${euros(opt.price_cents || 0)}</span>
+                        </li>
+                      `
+                    )
+                    .join("")}
+                </ul>
+                <div class="card-actions">
+                  ${provider.email ? `<a class="btn btn-outline-sm" href="mailto:${provider.email}?subject=Servizio ${encodeURIComponent(svc.title)}">Contatta il fornitore</a>` : ""}
+                  ${provider.phone ? `<a class="btn btn-ghost" href="https://wa.me/${provider.phone.replace(/\D/g, "")}" target="_blank">WhatsApp</a>` : ""}
+                </div>
               </div>
-              <span class="badge badge-strong">${provider.name || "Partner"}</span>
-            </div>
-            <p>${svc.description || ""}</p>
-            <ul class="service-options">
-              ${options
-                .map(
-                  (opt) => `
-                    <li>
-                      <div>
-                        <strong>${opt.name}</strong>
-                        <span class="small-label">${opt.available_days || "Giorni su richiesta"}</span>
-                        <p>${opt.description || ""}</p>
-                      </div>
-                      <span class="badge">€ ${euros(opt.price_cents || 0)}</span>
-                    </li>
-                  `
-                )
-                .join("")}
-            </ul>
-            <div class="card-actions">
-              ${provider.email ? `<a class="btn btn-outline-sm" href="mailto:${provider.email}?subject=Servizio ${encodeURIComponent(svc.title)}">Contatta il fornitore</a>` : ""}
-              ${provider.phone ? `<a class="btn btn-ghost" href="https://wa.me/${provider.phone.replace(/\D/g, "")}" target="_blank">WhatsApp</a>` : ""}
-            </div>
-          </div>
-        `;
-      })
-      .join("");
-  }
-
-  function applyFilters() {
-    const term = document.getElementById("service-search").value.toLowerCase();
-    const cat = document.getElementById("service-category").value;
-    const filtered = allServices.filter((svc) => {
-      const matchesText = (svc.title || "").toLowerCase().includes(term) || (svc.description || "").toLowerCase().includes(term);
-      const matchesCat = !cat || (svc.category || "").toLowerCase() === cat.toLowerCase();
-      return matchesText && matchesCat;
-    });
-    renderServices(filtered);
-  }
-
-  async function loadServices() {
-    const listEl = document.getElementById("services-public");
-    listEl.innerHTML = "<p>Caricamento servizi...</p>";
-    const { data, error } = await supabase
-      .from("extra_services")
-      .select("id,title,description,category,is_active, providers(name,email,phone), extra_service_options(*)")
-      .eq("is_active", true)
-      .order("created_at", { ascending: false });
-    if (error) {
-      listEl.innerHTML = "<p>Errore nel caricamento dei servizi extra.</p>";
-      return;
-    }
-    allServices = data || [];
-    applyFilters();
-  }
-
-  document.getElementById("service-search")?.addEventListener("input", applyFilters);
-  document.getElementById("service-category")?.addEventListener("change", applyFilters);
-
-  loadServices();
+            `;
+          })
+          .join("");
+      }
+    
+      function applyFilters() {
+        const term = document.getElementById("service-search").value.toLowerCase();
+        const cat = document.getElementById("service-category").value;
+        const filtered = allServices.filter((svc) => {
+          const matchesText = (svc.title || "").toLowerCase().includes(term) || (svc.description || "").toLowerCase().includes(term);
+          const matchesCat = !cat || (svc.category || "").toLowerCase() === cat.toLowerCase();
+          return matchesText && matchesCat;
+        });
+        renderServices(filtered);
+      }
+    
+      async function loadServices() {
+        const listEl = document.getElementById("services-public");
+        listEl.innerHTML = "<p>Caricamento servizi...</p>";
+        const { data, error } = await supabaseClientServiziExtra
+          .from("extra_services")
+          .select("id,title,description,category,is_active, providers(name,email,phone), extra_service_options(*)")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false });
+        if (error) {
+          listEl.innerHTML = "<p>Errore nel caricamento dei servizi extra.</p>";
+          return;
+        }
+        allServices = data || [];
+        applyFilters();
+      }
+    
+      document.getElementById("service-search")?.addEventListener("input", applyFilters);
+      document.getElementById("service-category")?.addEventListener("change", applyFilters);
+    
+      loadServices();
+  })();
 </script>
 </body>
 </html>

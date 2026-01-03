@@ -105,120 +105,127 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
-  const PHOTO_BUCKET = "property-photos";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-</script>
-<script>
-  function publicUrlFromPath(path) {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
-    return data?.publicUrl || null;
-  }
-
-  async function getCurrentUser() {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
-      window.location.href = "login.html";
-      return null;
-    }
-    return data.user;
-  }
-
-  let currentUser = null;
-
-  async function handleNewProperty(e) {
-    e.preventDefault();
-    const msg = document.getElementById("prop-message");
-    msg.textContent = "Salvataggio in corso...";
-
-    const title = document.getElementById("prop-title").value;
-    const zone = document.getElementById("prop-zone").value;
-    const shortDesc = document.getElementById("prop-short").value;
-    const fullDesc = document.getElementById("prop-full").value;
-    const guests = parseInt(document.getElementById("prop-guests").value || "0", 10);
-    const price = parseFloat(document.getElementById("prop-price").value || "0");
-    const photoFiles = Array.from(document.getElementById("prop-photos").files || []);
-
-    const { data: propData, error: propError } = await supabase
-      .from("properties")
-      .insert({
-        owner_id: currentUser.id,
-        title,
-        zone,
-        short_description: shortDesc,
-        full_description: fullDesc,
-        guests,
-        base_price: price,
-        status: "draft"
-      })
-      .select()
-      .single();
-
-    if (propError) {
-      msg.textContent = "Errore salvataggio struttura: " + propError.message;
-      return;
-    }
-
-    if (photoFiles.length > 0) {
-      let coverUrl = null;
-      const failedUploads = [];
-      const folderPath = `properties/${propData.id}`;
-
-      for (let i = 0; i < photoFiles.length; i++) {
-        const file = photoFiles[i];
-        const path = `${folderPath}/${Date.now()}-${i}-${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from(PHOTO_BUCKET)
-          .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
-
-        if (uploadError) {
-          failedUploads.push(`${file.name}: ${uploadError.message}`);
-          continue;
-        }
-
-        const { error: insertError } = await supabase.from("property_photos").insert({
-          property_id: propData.id,
-          path,
-          is_cover: i === 0,
-          sort_order: i,
-        });
-
-        if (insertError) {
-          failedUploads.push(`${file.name}: ${insertError.message}`);
-          continue;
-        }
-
-        if (i === 0) {
-          coverUrl = publicUrlFromPath(path);
-        }
+  (() => {
+      const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+      const PHOTO_BUCKET = "property-photos";
+      const supabaseClientAreaProprietariNuova = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+    
+      function publicUrlFromPath(path) {
+        if (!path) return null;
+        if (path.startsWith("http")) return path;
+        const { data } = supabaseClientAreaProprietariNuova.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+        return data?.publicUrl || null;
       }
-
-      if (coverUrl) {
-        await supabase.from("properties").update({ cover_photo_url: coverUrl }).eq("id", propData.id);
+    
+      async function getCurrentUser() {
+        const { data, error } = await supabaseClientAreaProprietariNuova.auth.getUser();
+        if (error || !data.user) {
+          window.location.href = "login.html";
+          return null;
+        }
+        return data.user;
       }
-
-      if (failedUploads.length > 0) {
-        msg.textContent =
-          "Struttura salvata, alcune foto non sono state caricate (controlla i permessi del bucket property-photos su Supabase): " +
-          failedUploads.join("; ");
-      } else {
-        msg.textContent = "Struttura salvata in bozza con foto.";
+    
+      let currentUser = null;
+    
+      async function handleNewProperty(e) {
+        e.preventDefault();
+        const msg = document.getElementById("prop-message");
+        msg.textContent = "Salvataggio in corso...";
+    
+        const title = document.getElementById("prop-title").value;
+        const zone = document.getElementById("prop-zone").value;
+        const shortDesc = document.getElementById("prop-short").value;
+        const fullDesc = document.getElementById("prop-full").value;
+        const guests = parseInt(document.getElementById("prop-guests").value || "0", 10);
+        const price = parseFloat(document.getElementById("prop-price").value || "0");
+        const photoFiles = Array.from(document.getElementById("prop-photos").files || []);
+    
+        const { data: propData, error: propError } = await supabaseClientAreaProprietariNuova
+          .from("properties")
+          .insert({
+            owner_id: currentUser.id,
+            title,
+            zone,
+            short_description: shortDesc,
+            full_description: fullDesc,
+            guests,
+            base_price: price,
+            status: "draft"
+          })
+          .select()
+          .single();
+    
+        if (propError) {
+          msg.textContent = "Errore salvataggio struttura: " + propError.message;
+          return;
+        }
+    
+        if (photoFiles.length > 0) {
+          let coverUrl = null;
+          const failedUploads = [];
+          const folderPath = `properties/${propData.id}`;
+    
+          for (let i = 0; i < photoFiles.length; i++) {
+            const file = photoFiles[i];
+            const path = `${folderPath}/${Date.now()}-${i}-${file.name}`;
+            const { error: uploadError } = await supabaseClientAreaProprietariNuova.storage
+              .from(PHOTO_BUCKET)
+              .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+    
+            if (uploadError) {
+              failedUploads.push(`${file.name}: ${uploadError.message}`);
+              continue;
+            }
+    
+            const { error: insertError } = await supabaseClientAreaProprietariNuova.from("property_photos").insert({
+              property_id: propData.id,
+              path,
+              is_cover: i === 0,
+              sort_order: i,
+            });
+    
+            if (insertError) {
+              failedUploads.push(`${file.name}: ${insertError.message}`);
+              continue;
+            }
+    
+            if (i === 0) {
+              coverUrl = publicUrlFromPath(path);
+            }
+          }
+    
+          if (coverUrl) {
+            await supabaseClientAreaProprietariNuova
+              .from("properties")
+              .update({ cover_photo_url: coverUrl })
+              .eq("id", propData.id);
+          }
+    
+          if (failedUploads.length > 0) {
+            msg.textContent =
+              "Struttura salvata, alcune foto non sono state caricate (controlla i permessi del bucket property-photos su Supabase): " +
+              failedUploads.join("; ");
+          } else {
+            msg.textContent = "Struttura salvata in bozza con foto.";
+          }
+        } else {
+          msg.textContent = "Struttura salvata in bozza.";
+        }
+    
+        document.getElementById("new-property-form").reset();
+        setTimeout(() => (window.location.href = "area-proprietari.html"), 800);
       }
-    } else {
-      msg.textContent = "Struttura salvata in bozza.";
-    }
-
-    document.getElementById("new-property-form").reset();
-    setTimeout(() => (window.location.href = "area-proprietari.html"), 800);
-  }
-
-  (async () => {
-    currentUser = await getCurrentUser();
-    if (!currentUser) return;
-    document.getElementById("new-property-form").addEventListener("submit", handleNewProperty);
+    
+      (async () => {
+        currentUser = await getCurrentUser();
+        if (!currentUser) return;
+        document.getElementById("new-property-form").addEventListener("submit", handleNewProperty);
+      })();
   })();
 </script>
 </body>

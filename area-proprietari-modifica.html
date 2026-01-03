@@ -114,345 +114,365 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
-  const PHOTO_BUCKET = "property-photos";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-</script>
-<script>
-  function publicUrlFromPath(path) {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
-    return data?.publicUrl || null;
-  }
-
-  function getStoragePathFromUrl(url) {
-    try {
-      const parsed = new URL(url);
-      const segments = parsed.pathname.split("/").filter(Boolean);
-      const objectIndex = segments.findIndex((s) => s === "object");
-      if (objectIndex !== -1 && segments.length > objectIndex + 2) {
-        return segments.slice(objectIndex + 2).join("/");
+  (() => {
+      const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+      const PHOTO_BUCKET = "property-photos";
+      const supabaseClientAreaProprietariModifica = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+    
+      function publicUrlFromPath(path) {
+        if (!path) return null;
+        if (path.startsWith("http")) return path;
+        const { data } = supabaseClientAreaProprietariModifica.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+        return data?.publicUrl || null;
       }
-    } catch (e) {
-      console.warn("Impossibile derivare il path dello storage", e);
-    }
-    return url;
-  }
-
-  async function getCurrentUser() {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
-      window.location.href = "login.html";
-      return null;
-    }
-    return data.user;
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  const propertyId = params.get("id");
-  let currentUser = null;
-  let currentProperty = null;
-
-  function renderOwnerGallery(photos, property) {
-    const gallery = document.getElementById("edit-photos");
-    if (!photos || photos.length === 0) {
-      gallery.innerHTML = "<p class=\"small-label\">Nessuna foto caricata. Aggiungine di nuove qui sotto.</p>";
-      return;
-    }
-
-    const first = photos.find((p) => p.isCover) || photos[0];
-    gallery.innerHTML = `
-      <div class="gallery-main">
-        <img id="owner-main-photo" src="${first.url}" alt="${first.label}" loading="lazy" />
-        <div class="gallery-caption">${first.label}</div>
-      </div>
-      <div class="gallery-thumbs" id="owner-thumbs">
-        ${photos
-          .map(
-            (p, idx) => `
-              <div class="gallery-thumb ${p.isCover ? "thumb-active" : ""}" data-full="${p.url}">
-                <img src="${p.url}" alt="${p.label}" loading="lazy" />
-                <div class="thumb-actions">
-                  ${
-                    p.isCover
-                      ? '<span class="small-label">Copertina</span>'
-                      : p.id === "cover"
-                        ? ""
-                        : `<button class=\"btn btn-outline btn-small\" data-set-cover=\"${p.id}\" data-cover-url=\"${p.url}\">Imposta copertina</button>`
-                  }
-                  ${
-                    p.id !== "cover"
-                      ? `<button class=\"btn btn-outline btn-small\" data-photo-id=\"${p.id}\" data-photo-path=\"${p.path}\">Elimina</button>`
-                      : ""
-                  }
-                </div>
-              </div>
-            `
-          )
-          .join("")}
-      </div>
-    `;
-
-    const main = document.getElementById("owner-main-photo");
-    const thumbs = document.querySelectorAll("#owner-thumbs .gallery-thumb");
-    thumbs.forEach((thumb) => {
-      thumb.addEventListener("click", () => {
-        main.src = thumb.dataset.full;
-        thumbs.forEach((t) => t.classList.remove("thumb-active"));
-        thumb.classList.add("thumb-active");
-      });
-    });
-
-    gallery.querySelectorAll("[data-set-cover]").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        setCoverPhoto(btn.dataset.setCover, btn.dataset.coverUrl, property);
-      });
-    });
-
-    gallery.querySelectorAll("[data-photo-id]").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        deletePhoto(btn.dataset.photoId, btn.dataset.photoPath);
-      });
-    });
-  }
-
-  async function loadExistingPhotos(property) {
-    const gallery = document.getElementById("edit-photos");
-    gallery.innerHTML = "<p class=\"small-label\">Caricamento foto...</p>";
-    const { data, error } = await supabase
-      .from("property_photos")
-      .select("*")
-      .eq("property_id", property.id)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      gallery.innerHTML =
-        "<p>Errore nel recupero delle foto. Verifica che il bucket property-photos consenta a utenti autenticati di leggere e caricare.</p>";
-      return;
-    }
-
-    const photos = (data || []).map((item) => {
-      const labelName = item.path?.split("/").pop() || "Foto";
-      return {
-        id: item.id,
-        url: publicUrlFromPath(item.path),
-        name: labelName,
-        label: item.is_cover ? "Foto di copertina" : labelName,
-        isCover: item.is_cover,
-        path: item.path,
-      };
-    });
-
-    if (photos.length === 0 && property.cover_photo_url) {
-      photos.push({
-        id: "cover",
-        url: property.cover_photo_url,
-        name: "cover",
-        label: "Foto di copertina",
-        isCover: true,
-        path: getStoragePathFromUrl(property.cover_photo_url),
-      });
-    }
-
-    if (photos.length > 0) {
-      const coverPhoto = photos.find((p) => p.isCover) || photos[0];
-      property.cover_photo_url = coverPhoto.url;
-    }
-
-    renderOwnerGallery(photos, property);
-  }
-
-  async function setCoverPhoto(photoId, photoUrl, property) {
-    if (!photoId || !property) return;
-    const msg = document.getElementById("edit-message");
-    msg.textContent = "Aggiornamento della copertina...";
-
-    const { error: resetError } = await supabase
-      .from("property_photos")
-      .update({ is_cover: false })
-      .eq("property_id", property.id);
-
-    if (resetError) {
-      msg.textContent = "Errore durante l'aggiornamento della copertina: " + resetError.message;
-      return;
-    }
-
-    const { error: coverError } = await supabase
-      .from("property_photos")
-      .update({ is_cover: true })
-      .eq("id", photoId);
-
-    if (coverError) {
-      msg.textContent = "Errore durante il salvataggio della copertina: " + coverError.message;
-      return;
-    }
-
-    await supabase.from("properties").update({ cover_photo_url: photoUrl }).eq("id", property.id);
-    property.cover_photo_url = photoUrl;
-    msg.textContent = "Copertina aggiornata.";
-    loadExistingPhotos(property);
-  }
-
-  async function deletePhoto(photoId, photoPath) {
-    const toDeletePath = photoPath?.startsWith("http") ? getStoragePathFromUrl(photoPath) : photoPath;
-
-    if (toDeletePath) {
-      const { error: storageError } = await supabase.storage.from(PHOTO_BUCKET).remove([toDeletePath]);
-      if (storageError) {
-        alert("Errore nell'eliminazione dallo storage: " + storageError.message);
-        return;
-      }
-    }
-
-    if (photoId && photoId !== "cover") {
-      const { error: dbError } = await supabase.from("property_photos").delete().eq("id", photoId);
-      if (dbError) {
-        alert("Foto rimossa dallo storage ma non dal database: " + dbError.message);
-      }
-    }
-
-    loadExistingPhotos(currentProperty);
-  }
-
-  async function loadProperty() {
-    if (!propertyId) {
-      document.getElementById("prop-name").textContent = "ID proprietà non valido";
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("properties")
-      .select("*")
-      .eq("id", propertyId)
-      .eq("owner_id", currentUser.id)
-      .single();
-
-    if (error || !data) {
-      document.getElementById("prop-name").textContent = "Proprietà non trovata";
-      return;
-    }
-
-    currentProperty = data;
-    document.getElementById("prop-name").textContent = data.title || "Proprietà";
-    document.getElementById("page-title").textContent = data.title || "Modifica proprietà";
-    document.getElementById("edit-title").value = data.title || "";
-    document.getElementById("edit-zone").value = data.zone || "";
-    document.getElementById("edit-short").value = data.short_description || "";
-    document.getElementById("edit-full").value = data.full_description || "";
-    document.getElementById("edit-guests").value = data.guests || "";
-    document.getElementById("edit-price").value = data.base_price || "";
-    document.getElementById("edit-status").value = data.status || "draft";
-
-    loadExistingPhotos(data);
-  }
-
-  async function handleEditSubmit(e) {
-    e.preventDefault();
-    if (!currentProperty) return;
-    const msg = document.getElementById("edit-message");
-    msg.textContent = "Aggiornamento in corso...";
-
-    const title = document.getElementById("edit-title").value;
-    const zone = document.getElementById("edit-zone").value;
-    const shortDesc = document.getElementById("edit-short").value;
-    const fullDesc = document.getElementById("edit-full").value;
-    const guests = parseInt(document.getElementById("edit-guests").value || "0", 10);
-    const price = parseFloat(document.getElementById("edit-price").value || "0");
-    const status = document.getElementById("edit-status").value;
-    const newPhotos = Array.from(document.getElementById("edit-photos-input").files || []);
-
-    const { error: updateError } = await supabase
-      .from("properties")
-      .update({
-        title,
-        zone,
-        short_description: shortDesc,
-        full_description: fullDesc,
-        guests,
-        base_price: price,
-        status,
-      })
-      .eq("id", currentProperty.id);
-
-    if (updateError) {
-      msg.textContent = "Errore durante il salvataggio: " + updateError.message;
-      return;
-    }
-
-    if (newPhotos.length > 0) {
-      let coverUrl = null;
-      const failedUploads = [];
-      const { count } = await supabase
-        .from("property_photos")
-        .select("id", { count: "exact", head: true })
-        .eq("property_id", currentProperty.id);
-      const offset = count || 0;
-
-      await supabase.from("property_photos").update({ is_cover: false }).eq("property_id", currentProperty.id);
-
-      for (let i = 0; i < newPhotos.length; i++) {
-        const file = newPhotos[i];
-        const path = `properties/${currentProperty.id}/${Date.now()}-${i}-${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from(PHOTO_BUCKET)
-          .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
-
-        if (uploadError) {
-          failedUploads.push(`${file.name}: ${uploadError.message}`);
-          continue;
+    
+      function getStoragePathFromUrl(url) {
+        try {
+          const parsed = new URL(url);
+          const segments = parsed.pathname.split("/").filter(Boolean);
+          const objectIndex = segments.findIndex((s) => s === "object");
+          if (objectIndex !== -1 && segments.length > objectIndex + 2) {
+            return segments.slice(objectIndex + 2).join("/");
+          }
+        } catch (e) {
+          console.warn("Impossibile derivare il path dello storage", e);
         }
-
-        const { error: insertError } = await supabase.from("property_photos").insert({
-          property_id: currentProperty.id,
-          path,
-          is_cover: i === 0,
-          sort_order: offset + i,
+        return url;
+      }
+    
+      async function getCurrentUser() {
+        const { data, error } = await supabaseClientAreaProprietariModifica.auth.getUser();
+        if (error || !data.user) {
+          window.location.href = "login.html";
+          return null;
+        }
+        return data.user;
+      }
+    
+      const params = new URLSearchParams(window.location.search);
+      const propertyId = params.get("id");
+      let currentUser = null;
+      let currentProperty = null;
+    
+      function renderOwnerGallery(photos, property) {
+        const gallery = document.getElementById("edit-photos");
+        if (!photos || photos.length === 0) {
+          gallery.innerHTML = "<p class=\"small-label\">Nessuna foto caricata. Aggiungine di nuove qui sotto.</p>";
+          return;
+        }
+    
+        const first = photos.find((p) => p.isCover) || photos[0];
+        gallery.innerHTML = `
+          <div class="gallery-main">
+            <img id="owner-main-photo" src="${first.url}" alt="${first.label}" loading="lazy" />
+            <div class="gallery-caption">${first.label}</div>
+          </div>
+          <div class="gallery-thumbs" id="owner-thumbs">
+            ${photos
+              .map(
+                (p, idx) => `
+                  <div class="gallery-thumb ${p.isCover ? "thumb-active" : ""}" data-full="${p.url}">
+                    <img src="${p.url}" alt="${p.label}" loading="lazy" />
+                    <div class="thumb-actions">
+                      ${
+                        p.isCover
+                          ? '<span class="small-label">Copertina</span>'
+                          : p.id === "cover"
+                            ? ""
+                            : `<button class=\"btn btn-outline btn-small\" data-set-cover=\"${p.id}\" data-cover-url=\"${p.url}\">Imposta copertina</button>`
+                      }
+                      ${
+                        p.id !== "cover"
+                          ? `<button class=\"btn btn-outline btn-small\" data-photo-id=\"${p.id}\" data-photo-path=\"${p.path}\">Elimina</button>`
+                          : ""
+                      }
+                    </div>
+                  </div>
+                `
+              )
+              .join("")}
+          </div>
+        `;
+    
+        const main = document.getElementById("owner-main-photo");
+        const thumbs = document.querySelectorAll("#owner-thumbs .gallery-thumb");
+        thumbs.forEach((thumb) => {
+          thumb.addEventListener("click", () => {
+            main.src = thumb.dataset.full;
+            thumbs.forEach((t) => t.classList.remove("thumb-active"));
+            thumb.classList.add("thumb-active");
+          });
         });
-
-        if (insertError) {
-          failedUploads.push(`${file.name}: ${insertError.message}`);
-          continue;
+    
+        gallery.querySelectorAll("[data-set-cover]").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            setCoverPhoto(btn.dataset.setCover, btn.dataset.coverUrl, property);
+          });
+        });
+    
+        gallery.querySelectorAll("[data-photo-id]").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            deletePhoto(btn.dataset.photoId, btn.dataset.photoPath);
+          });
+        });
+      }
+    
+      async function loadExistingPhotos(property) {
+        const gallery = document.getElementById("edit-photos");
+        gallery.innerHTML = "<p class=\"small-label\">Caricamento foto...</p>";
+        const { data, error } = await supabaseClientAreaProprietariModifica
+          .from("property_photos")
+          .select("*")
+          .eq("property_id", property.id)
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true });
+    
+        if (error) {
+          gallery.innerHTML =
+            "<p>Errore nel recupero delle foto. Verifica che il bucket property-photos consenta a utenti autenticati di leggere e caricare.</p>";
+          return;
         }
-
-        if (i === 0) {
-          coverUrl = publicUrlFromPath(path);
+    
+        const photos = (data || []).map((item) => {
+          const labelName = item.path?.split("/").pop() || "Foto";
+          return {
+            id: item.id,
+            url: publicUrlFromPath(item.path),
+            name: labelName,
+            label: item.is_cover ? "Foto di copertina" : labelName,
+            isCover: item.is_cover,
+            path: item.path,
+          };
+        });
+    
+        if (photos.length === 0 && property.cover_photo_url) {
+          photos.push({
+            id: "cover",
+            url: property.cover_photo_url,
+            name: "cover",
+            label: "Foto di copertina",
+            isCover: true,
+            path: getStoragePathFromUrl(property.cover_photo_url),
+          });
         }
+    
+        if (photos.length > 0) {
+          const coverPhoto = photos.find((p) => p.isCover) || photos[0];
+          property.cover_photo_url = coverPhoto.url;
+        }
+    
+        renderOwnerGallery(photos, property);
       }
-
-      if (coverUrl) {
-        await supabase.from("properties").update({ cover_photo_url: coverUrl }).eq("id", currentProperty.id);
-        currentProperty.cover_photo_url = coverUrl;
+    
+      async function setCoverPhoto(photoId, photoUrl, property) {
+        if (!photoId || !property) return;
+        const msg = document.getElementById("edit-message");
+        msg.textContent = "Aggiornamento della copertina...";
+    
+        const { error: resetError } = await supabaseClientAreaProprietariModifica
+          .from("property_photos")
+          .update({ is_cover: false })
+          .eq("property_id", property.id);
+    
+        if (resetError) {
+          msg.textContent = "Errore durante l'aggiornamento della copertina: " + resetError.message;
+          return;
+        }
+    
+        const { error: coverError } = await supabaseClientAreaProprietariModifica
+          .from("property_photos")
+          .update({ is_cover: true })
+          .eq("id", photoId);
+    
+        if (coverError) {
+          msg.textContent = "Errore durante il salvataggio della copertina: " + coverError.message;
+          return;
+        }
+    
+        await supabaseClientAreaProprietariModifica
+          .from("properties")
+          .update({ cover_photo_url: photoUrl })
+          .eq("id", property.id);
+        property.cover_photo_url = photoUrl;
+        msg.textContent = "Copertina aggiornata.";
+        loadExistingPhotos(property);
       }
-
-      if (failedUploads.length > 0) {
-        msg.textContent =
-          "Modifica salvata ma alcune foto non sono state caricate (controlla i permessi del bucket property-photos su Supabase): " +
-          failedUploads.join("; ");
+    
+      async function deletePhoto(photoId, photoPath) {
+        const toDeletePath = photoPath?.startsWith("http") ? getStoragePathFromUrl(photoPath) : photoPath;
+    
+        if (toDeletePath) {
+          const { error: storageError } = await supabaseClientAreaProprietariModifica.storage
+            .from(PHOTO_BUCKET)
+            .remove([toDeletePath]);
+          if (storageError) {
+            alert("Errore nell'eliminazione dallo storage: " + storageError.message);
+            return;
+          }
+        }
+    
+        if (photoId && photoId !== "cover") {
+          const { error: dbError } = await supabaseClientAreaProprietariModifica
+            .from("property_photos")
+            .delete()
+            .eq("id", photoId);
+          if (dbError) {
+            alert("Foto rimossa dallo storage ma non dal database: " + dbError.message);
+          }
+        }
+    
+        loadExistingPhotos(currentProperty);
       }
-    }
-
-    if (!msg.textContent || msg.textContent === "Aggiornamento in corso...") {
-      msg.textContent = "Annuncio aggiornato.";
-    }
-
-    document.getElementById("edit-photos-input").value = "";
-    await loadProperty();
-  }
-
-  (async () => {
-    currentUser = await getCurrentUser();
-    if (!currentUser) return;
-    if (!propertyId) {
-      document.getElementById("prop-name").textContent = "ID proprietà non valido";
-      return;
-    }
-    document.getElementById("edit-property-form").addEventListener("submit", handleEditSubmit);
-    loadProperty();
+    
+      async function loadProperty() {
+        if (!propertyId) {
+          document.getElementById("prop-name").textContent = "ID proprietà non valido";
+          return;
+        }
+    
+        const { data, error } = await supabaseClientAreaProprietariModifica
+          .from("properties")
+          .select("*")
+          .eq("id", propertyId)
+          .eq("owner_id", currentUser.id)
+          .single();
+    
+        if (error || !data) {
+          document.getElementById("prop-name").textContent = "Proprietà non trovata";
+          return;
+        }
+    
+        currentProperty = data;
+        document.getElementById("prop-name").textContent = data.title || "Proprietà";
+        document.getElementById("page-title").textContent = data.title || "Modifica proprietà";
+        document.getElementById("edit-title").value = data.title || "";
+        document.getElementById("edit-zone").value = data.zone || "";
+        document.getElementById("edit-short").value = data.short_description || "";
+        document.getElementById("edit-full").value = data.full_description || "";
+        document.getElementById("edit-guests").value = data.guests || "";
+        document.getElementById("edit-price").value = data.base_price || "";
+        document.getElementById("edit-status").value = data.status || "draft";
+    
+        loadExistingPhotos(data);
+      }
+    
+      async function handleEditSubmit(e) {
+        e.preventDefault();
+        if (!currentProperty) return;
+        const msg = document.getElementById("edit-message");
+        msg.textContent = "Aggiornamento in corso...";
+    
+        const title = document.getElementById("edit-title").value;
+        const zone = document.getElementById("edit-zone").value;
+        const shortDesc = document.getElementById("edit-short").value;
+        const fullDesc = document.getElementById("edit-full").value;
+        const guests = parseInt(document.getElementById("edit-guests").value || "0", 10);
+        const price = parseFloat(document.getElementById("edit-price").value || "0");
+        const status = document.getElementById("edit-status").value;
+        const newPhotos = Array.from(document.getElementById("edit-photos-input").files || []);
+    
+        const { error: updateError } = await supabaseClientAreaProprietariModifica
+          .from("properties")
+          .update({
+            title,
+            zone,
+            short_description: shortDesc,
+            full_description: fullDesc,
+            guests,
+            base_price: price,
+            status,
+          })
+          .eq("id", currentProperty.id);
+    
+        if (updateError) {
+          msg.textContent = "Errore durante il salvataggio: " + updateError.message;
+          return;
+        }
+    
+        if (newPhotos.length > 0) {
+          let coverUrl = null;
+          const failedUploads = [];
+          const { count } = await supabaseClientAreaProprietariModifica
+            .from("property_photos")
+            .select("id", { count: "exact", head: true })
+            .eq("property_id", currentProperty.id);
+          const offset = count || 0;
+    
+          await supabaseClientAreaProprietariModifica
+            .from("property_photos")
+            .update({ is_cover: false })
+            .eq("property_id", currentProperty.id);
+    
+          for (let i = 0; i < newPhotos.length; i++) {
+            const file = newPhotos[i];
+            const path = `properties/${currentProperty.id}/${Date.now()}-${i}-${file.name}`;
+            const { error: uploadError } = await supabaseClientAreaProprietariModifica.storage
+              .from(PHOTO_BUCKET)
+              .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+    
+            if (uploadError) {
+              failedUploads.push(`${file.name}: ${uploadError.message}`);
+              continue;
+            }
+    
+            const { error: insertError } = await supabaseClientAreaProprietariModifica
+              .from("property_photos")
+              .insert({
+              property_id: currentProperty.id,
+              path,
+              is_cover: i === 0,
+              sort_order: offset + i,
+            });
+    
+            if (insertError) {
+              failedUploads.push(`${file.name}: ${insertError.message}`);
+              continue;
+            }
+    
+            if (i === 0) {
+              coverUrl = publicUrlFromPath(path);
+            }
+          }
+    
+          if (coverUrl) {
+            await supabaseClientAreaProprietariModifica
+              .from("properties")
+              .update({ cover_photo_url: coverUrl })
+              .eq("id", currentProperty.id);
+            currentProperty.cover_photo_url = coverUrl;
+          }
+    
+          if (failedUploads.length > 0) {
+            msg.textContent =
+              "Modifica salvata ma alcune foto non sono state caricate (controlla i permessi del bucket property-photos su Supabase): " +
+              failedUploads.join("; ");
+          }
+        }
+    
+        if (!msg.textContent || msg.textContent === "Aggiornamento in corso...") {
+          msg.textContent = "Annuncio aggiornato.";
+        }
+    
+        document.getElementById("edit-photos-input").value = "";
+        await loadProperty();
+      }
+    
+      (async () => {
+        currentUser = await getCurrentUser();
+        if (!currentUser) return;
+        if (!propertyId) {
+          document.getElementById("prop-name").textContent = "ID proprietà non valido";
+          return;
+        }
+        document.getElementById("edit-property-form").addEventListener("submit", handleEditSubmit);
+        loadProperty();
+      })();
   })();
 </script>
 </body>

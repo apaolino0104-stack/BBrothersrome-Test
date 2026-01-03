@@ -91,236 +91,180 @@
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
-  const PHOTO_BUCKET = "property-photos";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    (() => {
+      const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+      const PHOTO_BUCKET = "property-photos";
+      const supabaseClientAlloggi = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-<script>
-  function publicUrlFromPath(path) {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
-    return data?.publicUrl || null;
-  }
-
-  const listEl = document.getElementById("public-properties");
-  const noteEl = document.getElementById("public-note");
-  const searchInput = document.getElementById("alloggi-search");
-  const zoneSelect = document.getElementById("filter-zone");
-  const guestsSelect = document.getElementById("filter-guests");
-  const typeSelect = document.getElementById("filter-type");
-
-  const state = {
-    properties: [],
-    filters: {
-      search: "",
-      zone: "",
-      guests: "",
-      type: "",
-    },
-  };
-
-  function getPropertyType(prop) {
-    return (prop.property_type || prop.typology || prop.type || "").trim();
-  }
-
-  function renderProperties(list) {
-    if (!listEl) return;
-
-    if (!list || list.length === 0) {
-      listEl.innerHTML = state.properties.length
-        ? "<p>Nessun alloggio corrisponde ai filtri attivi.</p>"
-        : "<p>Nessun alloggio pubblicato al momento.</p>";
-      if (noteEl) {
-        noteEl.textContent = state.properties.length
-          ? "Modifica i filtri o prova una nuova ricerca."
-          : "Gli alloggi saranno visibili man mano che i proprietari li pubblicano.";
+      function publicUrlFromPath(path) {
+        if (!path) return null;
+        if (path.startsWith("http")) return path;
+        const { data } = supabaseClientAlloggi.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+        return data?.publicUrl || null;
       }
-      return;
-    }
 
-    listEl.innerHTML = list
-      .map((p) => {
-        const photoList = Array.isArray(p.property_photos) ? [...p.property_photos] : [];
-        const sortedPhotos = photoList.sort((a, b) => {
-          if (a.is_cover === b.is_cover) return (a.sort_order || 0) - (b.sort_order || 0);
-          return a.is_cover ? -1 : 1;
-        });
-        const chosenPhoto = sortedPhotos[0];
-        const coverUrl = chosenPhoto ? publicUrlFromPath(chosenPhoto.path) : publicUrlFromPath(p.cover_photo_url);
+      const listEl = document.getElementById("public-properties");
+      const noteEl = document.getElementById("public-note");
+      const searchInput = document.getElementById("alloggi-search");
+      const zoneSelect = document.getElementById("filter-zone");
+      const guestsSelect = document.getElementById("filter-guests");
+      const typeSelect = document.getElementById("filter-type");
+
+      const state = {
+        properties: [],
+        filters: {
+          search: "",
+          zone: "",
+          guests: "",
+          type: "",
+        },
+      };
+
+      function getPropertyType(prop) {
+        return (prop.property_type || prop.typology || prop.type || "").trim();
+      }
+
+      function renderPropertyCard(property) {
+        const coverPhoto = property.property_photos?.find((p) => p.is_cover) || property.property_photos?.[0];
+        const coverUrl = coverPhoto ? publicUrlFromPath(coverPhoto.path) : null;
+        const photoMarkup =
+          coverUrl != null
+            ? `<img src="${coverUrl}" alt="${property.title || "Alloggio"}" loading="lazy" />`
+            : `<div class="photo-placeholder">Nessuna foto</div>`;
+
+        const price = property.price_per_night != null ? `${property.price_per_night} € / notte` : "Prezzo su richiesta";
+        const address = [property.address_line1, property.zone, property.city].filter(Boolean).join(", ");
+        const propType = getPropertyType(property);
+        const guests = property.guests != null ? `${property.guests} ospiti` : "Capienza non indicata";
 
         return `
-        <a class="listing-card listing-large listing-link lift-on-hover fade-in" href="property.html?id=${p.id}">
-          ${coverUrl ? `<img src="${coverUrl}" alt="Foto di ${p.title}" class="listing-cover" />` : ""}
-          <div class="listing-badge-row">
-            <span class="badge">${p.zone || "Roma"}</span>
-            <span class="badge badge-strong">${p.guests || "?"} ospiti</span>
-          </div>
-          <h2>${p.title}</h2>
-          <p>${p.short_description || ""}</p>
-          <ul class="tags">
-            <li>${p.base_price ? p.base_price + " €/notte" : "Prezzo su richiesta"}</li>
-          </ul>
-          <div class="listing-footer">
-            <span class="rating">Annuncio gestito da B&Brother’s</span>
-            <span class="btn btn-outline-sm">Apri la scheda</span>
-          </div>
-        </a>`;
-      })
-      .join("");
+          <article class="card property-card">
+            <div class="property-photo">${photoMarkup}</div>
+            <div class="property-info">
+              <div class="eyebrow">${propType || "Alloggio"} · ${guests}</div>
+              <h3>${property.title || "Proprietà"}</h3>
+              <p class="text-strong">${address || "Roma"}</p>
+              <p>${property.short_description || "Scopri i dettagli dell'alloggio."}</p>
+              <p class="price">${price}</p>
+              <a class="btn btn-primary" href="property.html?id=${property.id}">Scopri l'alloggio</a>
+            </div>
+          </article>
+        `;
+      }
 
-    if (noteEl) {
-      noteEl.textContent = `Mostrati ${list.length} di ${state.properties.length} alloggi disponibili.`;
-    }
-  }
+      function renderProperties(list) {
+        if (!listEl) return;
 
-  function renderOptions(selectEl, values, placeholder, formatFn = (value) => ({ value, label: value })) {
-    if (!selectEl) return;
-    const uniqueValues = Array.from(new Set(values.filter(Boolean)));
-    if (uniqueValues.length === 0) {
-      selectEl.innerHTML = `<option value="">${placeholder}</option>`;
-      return;
-    }
-    const options = [`<option value="">${placeholder}</option>`];
-    uniqueValues.forEach((value) => {
-      const { value: optionValue = value, label = value } = formatFn(value) || {};
-      options.push(`<option value="${optionValue}">${label}</option>`);
-    });
-    selectEl.innerHTML = options.join("");
-  }
+        if (!list || list.length === 0) {
+          listEl.innerHTML = `<p class="empty">Nessun alloggio trovato. Prova a cambiare i filtri.</p>`;
+          return;
+        }
 
-  function restoreSelection(selectEl, previousValue, allowedValues) {
-    if (!selectEl) return "";
-    if (previousValue && allowedValues.some((value) => value.toLowerCase() === previousValue.toLowerCase())) {
-      selectEl.value = previousValue;
-      return previousValue;
-    }
-    selectEl.value = "";
-    return "";
-  }
+        listEl.innerHTML = list.map((prop) => renderPropertyCard(prop)).join("");
+      }
 
-  function populateFilterOptions(properties) {
-    const previousSelections = {
-      zone: zoneSelect?.value || "",
-      guests: guestsSelect?.value || "",
-      type: typeSelect?.value || "",
-    };
+      function populateFilterOptions(properties) {
+        const zones = new Set();
+        const guestsOptions = new Set();
+        const types = new Set();
 
-    const zones = Array.from(
-      new Set(
-        properties
-          .map((p) => (p.zone || "").trim())
-          .filter((value) => value.length > 0)
-      )
-    ).sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" }));
+        properties.forEach((property) => {
+          if (property.zone) zones.add(property.zone);
+          if (property.guests) guestsOptions.add(property.guests);
+          const propType = getPropertyType(property);
+          if (propType) types.add(propType);
+        });
 
-    const guests = Array.from(
-      new Set(
-        properties
-          .map((p) => (typeof p.guests === "number" ? p.guests : parseInt(p.guests, 10)))
-          .filter((value) => !Number.isNaN(value))
-      )
-    )
-      .sort((a, b) => a - b)
-      .map((value) => `${value}`);
+        zoneSelect.innerHTML = `<option value="">Tutte le zone</option>${Array.from(zones)
+          .sort()
+          .map((zone) => `<option value="${zone}">${zone}</option>`)
+          .join("")}`;
 
-    const types = Array.from(
-      new Set(
-        properties
-          .map((p) => getPropertyType(p))
-          .filter((value) => value.length > 0)
-      )
-    ).sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" }));
+        guestsSelect.innerHTML = `<option value="">Tutti</option>${Array.from(guestsOptions)
+          .sort((a, b) => a - b)
+          .map((num) => `<option value="${num}">${num} ospiti</option>`)
+          .join("")}`;
 
-    renderOptions(zoneSelect, zones, "Tutte le zone");
-    renderOptions(
-      guestsSelect,
-      guests,
-      "Tutti i posti letto",
-      (value) => ({
-        value,
-        label: parseInt(value, 10) === 1 ? `${value} ospite` : `${value} ospiti`,
-      })
-    );
-    renderOptions(typeSelect, types, "Tutte le tipologie");
+        typeSelect.innerHTML = `<option value="">Tutti i tipi</option>${Array.from(types)
+          .sort()
+          .map((type) => `<option value="${type}">${type}</option>`)
+          .join("")}`;
+      }
 
-    state.filters.zone = restoreSelection(zoneSelect, previousSelections.zone, zones);
-    state.filters.guests = restoreSelection(guestsSelect, previousSelections.guests, guests);
-    state.filters.type = restoreSelection(typeSelect, previousSelections.type, types);
-  }
+      function matchesFilters(property) {
+        const { search, zone, guests, type } = state.filters;
+        const normalizedSearch = search.toLowerCase().trim();
 
-  function matchesFilters(property) {
-    const { search, zone, guests, type } = state.filters;
-    const normalizedSearch = search.trim().toLowerCase();
-    const matchesSearch = !normalizedSearch
-      || [property.title, property.zone, property.short_description]
-        .some((field) => (field || "").toLowerCase().includes(normalizedSearch));
+        const matchesSearch =
+          !normalizedSearch ||
+          [property.title, property.zone, property.short_description]
+            .some((field) => (field || "").toLowerCase().includes(normalizedSearch));
 
-    const matchesZone = !zone || (property.zone || "").toLowerCase() === zone.toLowerCase();
-    const matchesGuests = !guests || String(property.guests || "") === guests;
-    const propType = getPropertyType(property);
-    const matchesType = !type || propType.toLowerCase() === type.toLowerCase();
+        const matchesZone = !zone || (property.zone || "").toLowerCase() === zone.toLowerCase();
+        const matchesGuests = !guests || String(property.guests || "") === guests;
+        const propType = getPropertyType(property);
+        const matchesType = !type || propType.toLowerCase() === type.toLowerCase();
 
-    return matchesSearch && matchesZone && matchesGuests && matchesType;
-  }
+        return matchesSearch && matchesZone && matchesGuests && matchesType;
+      }
 
-  function applyFilters() {
-    if (!state.properties.length) {
-      renderProperties([]);
-      return;
-    }
+      function applyFilters() {
+        if (!state.properties.length) {
+          renderProperties([]);
+          return;
+        }
 
-    const filtered = state.properties.filter((prop) => matchesFilters(prop));
-    renderProperties(filtered);
-  }
+        const filtered = state.properties.filter((prop) => matchesFilters(prop));
+        renderProperties(filtered);
+      }
 
-  async function loadPublicProperties() {
-    if (!listEl) return;
-    listEl.innerHTML = "<p>Caricamento alloggi...</p>";
+      async function loadPublicProperties() {
+        if (!listEl) return;
+        listEl.innerHTML = "<p>Caricamento alloggi...</p>";
 
-    const { data, error } = await supabase
-      .from("properties")
-      .select("*, property_photos(path,is_cover,sort_order)")
-      .eq("status", "published")
-      .order("created_at", { ascending: false });
+        const { data, error } = await supabaseClientAlloggi
+          .from("properties")
+          .select("*, property_photos(path,is_cover,sort_order)")
+          .eq("status", "published")
+          .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error(error);
-      listEl.innerHTML = "<p>Errore nel caricamento degli alloggi.</p>";
-      return;
-    }
+        if (error) {
+          console.error(error);
+          listEl.innerHTML = "<p>Errore nel caricamento degli alloggi.</p>";
+          return;
+        }
 
-    state.properties = Array.isArray(data) ? data : [];
-    populateFilterOptions(state.properties);
-    applyFilters();
-  }
+        state.properties = Array.isArray(data) ? data : [];
+        populateFilterOptions(state.properties);
+        applyFilters();
+      }
 
-  loadPublicProperties();
+      loadPublicProperties();
 
-  searchInput?.addEventListener("input", (event) => {
-    state.filters.search = event.target.value;
-    applyFilters();
-  });
+      searchInput?.addEventListener("input", (event) => {
+        state.filters.search = event.target.value;
+        applyFilters();
+      });
 
-  zoneSelect?.addEventListener("change", (event) => {
-    state.filters.zone = event.target.value;
-    applyFilters();
-  });
+      zoneSelect?.addEventListener("change", (event) => {
+        state.filters.zone = event.target.value;
+        applyFilters();
+      });
 
-  guestsSelect?.addEventListener("change", (event) => {
-    state.filters.guests = event.target.value;
-    applyFilters();
-  });
+      guestsSelect?.addEventListener("change", (event) => {
+        state.filters.guests = event.target.value;
+        applyFilters();
+      });
 
-  typeSelect?.addEventListener("change", (event) => {
-    state.filters.type = event.target.value;
-    applyFilters();
-  });
-</script>
+      typeSelect?.addEventListener("change", (event) => {
+        state.filters.type = event.target.value;
+        applyFilters();
+      });
+    })();
+  </script>
 
 </body>
 </html>

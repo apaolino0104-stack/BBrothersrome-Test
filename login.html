@@ -84,41 +84,44 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-</script>
-
-<script>
-  const emailInput = document.getElementById("email");
-  const passwordInput = document.getElementById("password");
-  const msg = document.getElementById("auth-message");
-
-  document.getElementById("btn-login").addEventListener("click", async () => {
-    msg.textContent = "Accesso in corso...";
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: emailInput.value,
-      password: passwordInput.value,
-    });
-    if (error) {
-      msg.textContent = "Errore login: " + error.message;
-      return;
-    }
-    window.location.href = "area-proprietari.html";
-  });
-
-  document.getElementById("btn-signup").addEventListener("click", async () => {
-    msg.textContent = "Registrazione in corso...";
-    const { data, error } = await supabase.auth.signUp({
-      email: emailInput.value,
-      password: passwordInput.value,
-    });
-    if (error) {
-      msg.textContent = "Errore registrazione: " + error.message;
-      return;
-    }
-    msg.textContent = "Registrato! Controlla la mail per confermare l'account.";
-  });
+  (() => {
+      const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+      const supabaseClientLogin = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+    
+      const emailInput = document.getElementById("email");
+      const passwordInput = document.getElementById("password");
+      const msg = document.getElementById("auth-message");
+    
+      document.getElementById("btn-login").addEventListener("click", async () => {
+        msg.textContent = "Accesso in corso...";
+        const { data, error } = await supabaseClientLogin.auth.signInWithPassword({
+          email: emailInput.value,
+          password: passwordInput.value,
+        });
+        if (error) {
+          msg.textContent = "Errore login: " + error.message;
+          return;
+        }
+        window.location.href = "area-proprietari.html";
+      });
+    
+      document.getElementById("btn-signup").addEventListener("click", async () => {
+        msg.textContent = "Registrazione in corso...";
+        const { data, error } = await supabaseClientLogin.auth.signUp({
+          email: emailInput.value,
+          password: passwordInput.value,
+        });
+        if (error) {
+          msg.textContent = "Errore registrazione: " + error.message;
+          return;
+        }
+        msg.textContent = "Registrato! Controlla la mail per confermare l'account.";
+      });
+  })();
 </script>
 
 </body>

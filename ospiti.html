@@ -136,59 +136,64 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  async function loadFeaturedProperties() {
-    const listEl = document.getElementById("featured-properties");
-    const noteEl = document.getElementById("featured-note");
-    if (!listEl) return;
-    listEl.innerHTML = "<p>Caricamento alloggi...</p>";
-
-    const { data, error } = await supabase
-      .from("properties")
-      .select("*")
-      .eq("status", "published")
-      .order("created_at", { ascending: false })
-      .limit(3);
-
-    if (error) {
-      console.error(error);
-      listEl.innerHTML = "<p>Errore nel caricamento degli alloggi.</p>";
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      listEl.innerHTML = "<p>Nessun alloggio pubblicato al momento.</p>";
-      if (noteEl) noteEl.textContent = "Gli alloggi compariranno qui non appena saranno pubblicati.";
-      return;
-    }
-
-    listEl.innerHTML = data
-      .map((p, idx) => `
-        <a class="listing-card lift-on-hover fade-in ${idx === 0 ? "delay-1" : idx === 1 ? "delay-2" : "delay-3"}" href="property.html?id=${p.id}">
-          ${p.cover_photo_url ? `<img src="${p.cover_photo_url}" alt="Foto di ${p.title}" class="listing-cover" />` : ""}
-          <div class="listing-badge-row">
-            <span class="badge">${p.zone || "Roma"}</span>
-            <span class="badge badge-strong">${p.guests || "?"} ospiti</span>
-          </div>
-          <h3>${p.title}</h3>
-          <p>${p.short_description || ""}</p>
-          <ul class="tags">
-            <li>${p.base_price ? p.base_price + " €/notte" : "Prezzo su richiesta"}</li>
-            ${p.check_in_mode ? `<li>${p.check_in_mode}</li>` : ""}
-          </ul>
-          <div class="listing-footer">
-            <span class="rating">Annuncio gestito da B&Brother’s</span>
-            <span class="btn btn-outline-sm">Dettagli</span>
-          </div>
-        </a>
-      `)
-      .join("");
-  }
-
-  loadFeaturedProperties();
+  (() => {
+      const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+      const supabaseClientOspiti = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+    
+      async function loadFeaturedProperties() {
+        const listEl = document.getElementById("featured-properties");
+        const noteEl = document.getElementById("featured-note");
+        if (!listEl) return;
+        listEl.innerHTML = "<p>Caricamento alloggi...</p>";
+    
+        const { data, error } = await supabaseClientOspiti
+          .from("properties")
+          .select("*")
+          .eq("status", "published")
+          .order("created_at", { ascending: false })
+          .limit(3);
+    
+        if (error) {
+          console.error(error);
+          listEl.innerHTML = "<p>Errore nel caricamento degli alloggi.</p>";
+          return;
+        }
+    
+        if (!data || data.length === 0) {
+          listEl.innerHTML = "<p>Nessun alloggio pubblicato al momento.</p>";
+          if (noteEl) noteEl.textContent = "Gli alloggi compariranno qui non appena saranno pubblicati.";
+          return;
+        }
+    
+        listEl.innerHTML = data
+          .map((p, idx) => `
+            <a class="listing-card lift-on-hover fade-in ${idx === 0 ? "delay-1" : idx === 1 ? "delay-2" : "delay-3"}" href="property.html?id=${p.id}">
+              ${p.cover_photo_url ? `<img src="${p.cover_photo_url}" alt="Foto di ${p.title}" class="listing-cover" />` : ""}
+              <div class="listing-badge-row">
+                <span class="badge">${p.zone || "Roma"}</span>
+                <span class="badge badge-strong">${p.guests || "?"} ospiti</span>
+              </div>
+              <h3>${p.title}</h3>
+              <p>${p.short_description || ""}</p>
+              <ul class="tags">
+                <li>${p.base_price ? p.base_price + " €/notte" : "Prezzo su richiesta"}</li>
+                ${p.check_in_mode ? `<li>${p.check_in_mode}</li>` : ""}
+              </ul>
+              <div class="listing-footer">
+                <span class="rating">Annuncio gestito da B&Brother’s</span>
+                <span class="btn btn-outline-sm">Dettagli</span>
+              </div>
+            </a>
+          `)
+          .join("");
+      }
+    
+      loadFeaturedProperties();
+  })();
 </script>
 </body>
 </html>

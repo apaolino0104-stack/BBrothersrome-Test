@@ -87,123 +87,126 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
-  const PHOTO_BUCKET = "property-photos";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-</script>
-
-<script>
-  function publicUrlFromPath(path) {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
-    return data?.publicUrl || null;
-  }
-
-  async function getCurrentUser() {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
-      window.location.href = "login.html";
-      return null;
-    }
-    return data.user;
-  }
-
-  let currentUser = null;
-  let propertiesCache = [];
-  let selectedPropertyId = null;
-
-  document.getElementById("btn-logout").addEventListener("click", async () => {
-    await supabase.auth.signOut();
-    window.location.href = "login.html";
-  });
-
-  async function fetchCoverMap(ids) {
-    if (!ids || ids.length === 0) return {};
-    const { data, error } = await supabase
-      .from("property_photos")
-      .select("*")
-      .in("property_id", ids)
-      .order("is_cover", { ascending: false })
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      console.warn("Impossibile recuperare le cover", error.message);
-      return {};
-    }
-
-    const map = {};
-    (data || []).forEach((photo) => {
-      if (!map[photo.property_id]) {
-        map[photo.property_id] = photo;
+  (() => {
+      const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+      const PHOTO_BUCKET = "property-photos";
+      const supabaseClientAreaProprietari = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+    
+      function publicUrlFromPath(path) {
+        if (!path) return null;
+        if (path.startsWith("http")) return path;
+        const { data } = supabaseClientAreaProprietari.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+        return data?.publicUrl || null;
       }
-    });
-    return map;
-  }
-
-  async function loadMyProperties() {
-    const listEl = document.getElementById("my-properties");
-    listEl.innerHTML = "Caricamento...";
-
-    const { data, error } = await supabase
-      .from("properties")
-      .select("*")
-      .eq("owner_id", currentUser.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      listEl.innerHTML = "Errore nel caricamento: " + error.message;
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      listEl.innerHTML = `
-        <article class="listing-card">
-          <h3>Nessuna struttura</h3>
-          <p class="section-subtitle">Inizia aggiungendo la tua prima proprietà: copertina, dettagli e pubblicazione.</p>
-          <a class="btn btn-primary" href="area-proprietari-nuova.html">Aggiungi proprietà</a>
-        </article>
-      `;
-      return;
-    }
-
-    const ids = data.map((p) => p.id);
-    const coverMap = await fetchCoverMap(ids);
-
-    listEl.innerHTML = data
-      .map((p) => {
-        const coverPath = coverMap[p.id]?.path || p.cover_photo_url;
-        const coverUrl = publicUrlFromPath(coverPath) || "";
-        const badge = p.status === "published" ? "badge-strong" : "";
-        return `
-          <article class="listing-card lift-on-hover">
-            ${coverUrl ? `<img src="${coverUrl}" alt="Copertina ${p.title}" class="listing-cover" loading="lazy" />` : ""}
-            <div class="listing-badge-row" style="margin-bottom: 8px;">
-              <span class="badge ${badge}">${p.status || "bozza"}</span>
-              <span class="badge">${p.zone || "Roma"}</span>
-            </div>
-            <h3>${p.title}</h3>
-            <p>${p.short_description || ""}</p>
-            <div class="listing-badge-row" style="margin-top: 10px;">
-              ${p.guests ? `<span class="badge">${p.guests} ospiti</span>` : ""}
-              ${p.base_price ? `<span class="badge">€${p.base_price} / notte</span>` : ""}
-            </div>
-            <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
-              <a class="btn btn-outline" href="area-proprietari-modifica.html?id=${p.id}">Modifica</a>
-            </div>
-          </article>
-        `;
-      })
-      .join("");
-  }
-
-  (async () => {
-    currentUser = await getCurrentUser();
-    if (!currentUser) return;
-    document.getElementById("owner-email").textContent = currentUser.email;
-    loadMyProperties();
+    
+      async function getCurrentUser() {
+        const { data, error } = await supabaseClientAreaProprietari.auth.getUser();
+        if (error || !data.user) {
+          window.location.href = "login.html";
+          return null;
+        }
+        return data.user;
+      }
+    
+      let currentUser = null;
+      let propertiesCache = [];
+      let selectedPropertyId = null;
+    
+      document.getElementById("btn-logout").addEventListener("click", async () => {
+        await supabaseClientAreaProprietari.auth.signOut();
+        window.location.href = "login.html";
+      });
+    
+      async function fetchCoverMap(ids) {
+        if (!ids || ids.length === 0) return {};
+        const { data, error } = await supabaseClientAreaProprietari
+          .from("property_photos")
+          .select("*")
+          .in("property_id", ids)
+          .order("is_cover", { ascending: false })
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true });
+    
+        if (error) {
+          console.warn("Impossibile recuperare le cover", error.message);
+          return {};
+        }
+    
+        const map = {};
+        (data || []).forEach((photo) => {
+          if (!map[photo.property_id]) {
+            map[photo.property_id] = photo;
+          }
+        });
+        return map;
+      }
+    
+      async function loadMyProperties() {
+        const listEl = document.getElementById("my-properties");
+        listEl.innerHTML = "Caricamento...";
+    
+        const { data, error } = await supabaseClientAreaProprietari
+          .from("properties")
+          .select("*")
+          .eq("owner_id", currentUser.id)
+          .order("created_at", { ascending: false });
+    
+        if (error) {
+          listEl.innerHTML = "Errore nel caricamento: " + error.message;
+          return;
+        }
+    
+        if (!data || data.length === 0) {
+          listEl.innerHTML = `
+            <article class="listing-card">
+              <h3>Nessuna struttura</h3>
+              <p class="section-subtitle">Inizia aggiungendo la tua prima proprietà: copertina, dettagli e pubblicazione.</p>
+              <a class="btn btn-primary" href="area-proprietari-nuova.html">Aggiungi proprietà</a>
+            </article>
+          `;
+          return;
+        }
+    
+        const ids = data.map((p) => p.id);
+        const coverMap = await fetchCoverMap(ids);
+    
+        listEl.innerHTML = data
+          .map((p) => {
+            const coverPath = coverMap[p.id]?.path || p.cover_photo_url;
+            const coverUrl = publicUrlFromPath(coverPath) || "";
+            const badge = p.status === "published" ? "badge-strong" : "";
+            return `
+              <article class="listing-card lift-on-hover">
+                ${coverUrl ? `<img src="${coverUrl}" alt="Copertina ${p.title}" class="listing-cover" loading="lazy" />` : ""}
+                <div class="listing-badge-row" style="margin-bottom: 8px;">
+                  <span class="badge ${badge}">${p.status || "bozza"}</span>
+                  <span class="badge">${p.zone || "Roma"}</span>
+                </div>
+                <h3>${p.title}</h3>
+                <p>${p.short_description || ""}</p>
+                <div class="listing-badge-row" style="margin-top: 10px;">
+                  ${p.guests ? `<span class="badge">${p.guests} ospiti</span>` : ""}
+                  ${p.base_price ? `<span class="badge">€${p.base_price} / notte</span>` : ""}
+                </div>
+                <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+                  <a class="btn btn-outline" href="area-proprietari-modifica.html?id=${p.id}">Modifica</a>
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+      }
+    
+      (async () => {
+        currentUser = await getCurrentUser();
+        if (!currentUser) return;
+        document.getElementById("owner-email").textContent = currentUser.email;
+        loadMyProperties();
+      })();
   })();
 </script>
 

@@ -81,163 +81,163 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
-  const PHOTO_BUCKET = "property-photos";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-</script>
-
-<script>
-  const params = new URLSearchParams(window.location.search);
-  const propertyId = params.get("id");
-  const titleEl = document.getElementById("prop-title");
-  const shortEl = document.getElementById("prop-short");
-  const fullEl = document.getElementById("prop-full");
-  const metaEl = document.getElementById("prop-meta");
-  const galleryEl = document.getElementById("prop-gallery");
-  const messageEl = document.getElementById("prop-message");
-  const priceEl = document.getElementById("prop-price");
-  const whatsappLink = document.getElementById("whatsapp-link");
-
-  function publicUrlFromPath(path) {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
-    return data?.publicUrl || null;
-  }
-
-  if (!propertyId) {
-    titleEl.textContent = "Seleziona un alloggio";
-    shortEl.textContent = "Torna alla pagina Alloggi e clicca su una scheda per vedere i dettagli.";
-    messageEl.innerHTML = "<p>Apri <strong>alloggi.html</strong>, scegli un annuncio pubblicato e verrai portato qui con tutte le informazioni e le foto.</p>";
-  }
-
-  function renderGallery(photos, propertyTitle) {
-    if (photos.length === 0) {
-      galleryEl.innerHTML = "<p>Il proprietario non ha ancora caricato foto.</p>";
-      return;
-    }
-
-    const first = photos[0];
-    galleryEl.innerHTML = `
-      <div class="gallery-viewer">
-        <div class="gallery-main">
-          <button class="gallery-nav gallery-nav-prev" aria-label="Foto precedente">❮</button>
-          <img
-            id="gallery-main-img"
-            src="${first.url}"
-            alt="${propertyTitle || "Foto dell'alloggio"}"
-            loading="lazy"
-          />
-          <button class="gallery-nav gallery-nav-next" aria-label="Foto successiva">❯</button>
-        </div>
-        <div class="gallery-thumbs" id="gallery-thumbs">
-          ${photos
-            .map(
-              (photo, idx) => `
-                <button class="gallery-thumb ${idx === 0 ? "thumb-active" : ""}" data-idx="${idx}" aria-label="Foto ${idx + 1}">
-                  <img src="${photo.url}" alt="Anteprima foto ${idx + 1}" loading="lazy" />
-                </button>
-              `
-            )
-            .join("")}
-        </div>
-      </div>
-    `;
-
-    const mainImg = document.getElementById("gallery-main-img");
-    const prevBtn = galleryEl.querySelector(".gallery-nav-prev");
-    const nextBtn = galleryEl.querySelector(".gallery-nav-next");
-    const thumbs = Array.from(document.querySelectorAll(".gallery-thumb"));
-    let currentIndex = 0;
-
-    function showPhoto(index) {
-      const photo = photos[index];
-      if (!photo) return;
-      mainImg.src = photo.url;
-      mainImg.alt = propertyTitle || "Foto dell'alloggio";
-      thumbs.forEach((el) => el.classList.remove("thumb-active"));
-      thumbs[index]?.classList.add("thumb-active");
-      currentIndex = index;
-    }
-
-    function showNext(step) {
-      const count = photos.length;
-      const target = (currentIndex + step + count) % count;
-      showPhoto(target);
-    }
-
-    thumbs.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const index = parseInt(btn.dataset.idx, 10);
-        showPhoto(index);
-      });
-    });
-
-    prevBtn?.addEventListener("click", () => showNext(-1));
-    nextBtn?.addEventListener("click", () => showNext(1));
-  }
-
-  async function loadGallery(photoRows, coverFallback, propertyTitle) {
-    galleryEl.innerHTML = "<p>Caricamento foto...</p>";
-    const orderedRows = Array.isArray(photoRows)
-      ? [...photoRows].sort((a, b) => {
-          if (a.is_cover === b.is_cover) return (a.sort_order || 0) - (b.sort_order || 0);
-          return a.is_cover ? -1 : 1;
-        })
-      : [];
-
-    const photos = orderedRows.map((row) => ({
-      url: publicUrlFromPath(row.path),
-      name: row.is_cover ? "Foto di copertina" : row.path?.split("/").pop() || "Foto",
-    }));
-
-    if (photos.length === 0 && coverFallback) {
-      photos.push({ url: coverFallback, name: "Foto di copertina" });
-    }
-
-    renderGallery(photos, propertyTitle);
-  }
-
-  async function loadProperty() {
-    if (!propertyId) return;
-    messageEl.textContent = "";
-
-    const { data, error } = await supabase
-      .from("properties")
-      .select("*, property_photos(*)")
-      .eq("id", propertyId)
-      .single();
-
-    if (error || !data) {
-      messageEl.textContent = "Alloggio non trovato.";
-      titleEl.textContent = "Alloggio non disponibile";
-      return;
-    }
-
-    const property = data;
-    titleEl.textContent = property.title;
-    shortEl.textContent = property.short_description || "";
-    fullEl.textContent = property.full_description || "Il proprietario non ha ancora inserito una descrizione completa.";
-
-    metaEl.innerHTML = `
-      <span class=\"badge\">${property.zone || "Roma"}</span>
-      <span class=\"badge badge-strong\">${property.guests || "?"} ospiti</span>
-      <span class=\"badge\">${property.status === "published" ? "Annuncio online" : "Bozza"}</span>
-    `;
-
-    priceEl.textContent = property.base_price
-      ? `A partire da ${property.base_price} €/notte`
-      : "Prezzo su richiesta";
-
-    whatsappLink.href = `https://wa.me/393345071226?text=${encodeURIComponent(
-      `Ciao, vorrei informazioni sull'alloggio "${property.title}"`
-    )}`;
-
-    loadGallery(property.property_photos || [], property.cover_photo_url, property.title);
-  }
-
-  loadProperty();
+  (() => {
+      const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+      const PHOTO_BUCKET = "property-photos";
+      const supabaseClientProperty = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+      const params = new URLSearchParams(window.location.search);
+      const propertyId = params.get("id");
+      const titleEl = document.getElementById("prop-title");
+      const shortEl = document.getElementById("prop-short");
+      const fullEl = document.getElementById("prop-full");
+      const metaEl = document.getElementById("prop-meta");
+      const galleryEl = document.getElementById("prop-gallery");
+      const messageEl = document.getElementById("prop-message");
+      const priceEl = document.getElementById("prop-price");
+      const whatsappLink = document.getElementById("whatsapp-link");
+    
+      function publicUrlFromPath(path) {
+        if (!path) return null;
+        if (path.startsWith("http")) return path;
+        const { data } = supabaseClientProperty.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+        return data?.publicUrl || null;
+      }
+    
+      if (!propertyId) {
+        titleEl.textContent = "Seleziona un alloggio";
+        shortEl.textContent = "Torna alla pagina Alloggi e clicca su una scheda per vedere i dettagli.";
+        messageEl.innerHTML = "<p>Apri <strong>alloggi.html</strong>, scegli un annuncio pubblicato e verrai portato qui con tutte le informazioni e le foto.</p>";
+      }
+    
+      function renderGallery(photos, propertyTitle) {
+        if (photos.length === 0) {
+          galleryEl.innerHTML = "<p>Il proprietario non ha ancora caricato foto.</p>";
+          return;
+        }
+    
+        const first = photos[0];
+        galleryEl.innerHTML = `
+          <div class="gallery-viewer">
+            <div class="gallery-main">
+              <button class="gallery-nav gallery-nav-prev" aria-label="Foto precedente">❮</button>
+              <img
+                id="gallery-main-img"
+                src="${first.url}"
+                alt="${propertyTitle || "Foto dell'alloggio"}"
+                loading="lazy"
+              />
+              <button class="gallery-nav gallery-nav-next" aria-label="Foto successiva">❯</button>
+            </div>
+            <div class="gallery-thumbs" id="gallery-thumbs">
+              ${photos
+                .map(
+                  (photo, idx) => `
+                    <button class="gallery-thumb ${idx === 0 ? "thumb-active" : ""}" data-idx="${idx}" aria-label="Foto ${idx + 1}">
+                      <img src="${photo.url}" alt="Anteprima foto ${idx + 1}" loading="lazy" />
+                    </button>
+                  `
+                )
+                .join("")}
+            </div>
+          </div>
+        `;
+    
+        const mainImg = document.getElementById("gallery-main-img");
+        const prevBtn = galleryEl.querySelector(".gallery-nav-prev");
+        const nextBtn = galleryEl.querySelector(".gallery-nav-next");
+        const thumbs = Array.from(document.querySelectorAll(".gallery-thumb"));
+        let currentIndex = 0;
+    
+        function showPhoto(index) {
+          const photo = photos[index];
+          if (!photo) return;
+          mainImg.src = photo.url;
+          mainImg.alt = propertyTitle || "Foto dell'alloggio";
+          thumbs.forEach((el) => el.classList.remove("thumb-active"));
+          thumbs[index]?.classList.add("thumb-active");
+          currentIndex = index;
+        }
+    
+        function showNext(step) {
+          const count = photos.length;
+          const target = (currentIndex + step + count) % count;
+          showPhoto(target);
+        }
+    
+        thumbs.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const index = parseInt(btn.dataset.idx, 10);
+            showPhoto(index);
+          });
+        });
+    
+        prevBtn?.addEventListener("click", () => showNext(-1));
+        nextBtn?.addEventListener("click", () => showNext(1));
+      }
+    
+      async function loadGallery(photoRows, coverFallback, propertyTitle) {
+        galleryEl.innerHTML = "<p>Caricamento foto...</p>";
+        const orderedRows = Array.isArray(photoRows)
+          ? [...photoRows].sort((a, b) => {
+              if (a.is_cover === b.is_cover) return (a.sort_order || 0) - (b.sort_order || 0);
+              return a.is_cover ? -1 : 1;
+            })
+          : [];
+    
+        const photos = orderedRows.map((row) => ({
+          url: publicUrlFromPath(row.path),
+          name: row.is_cover ? "Foto di copertina" : row.path?.split("/").pop() || "Foto",
+        }));
+    
+        if (photos.length === 0 && coverFallback) {
+          photos.push({ url: coverFallback, name: "Foto di copertina" });
+        }
+    
+        renderGallery(photos, propertyTitle);
+      }
+    
+      async function loadProperty() {
+        if (!propertyId) return;
+        messageEl.textContent = "";
+    
+        const { data, error } = await supabaseClientProperty
+          .from("properties")
+          .select("*, property_photos(*)")
+          .eq("id", propertyId)
+          .single();
+    
+        if (error || !data) {
+          messageEl.textContent = "Alloggio non trovato.";
+          titleEl.textContent = "Alloggio non disponibile";
+          return;
+        }
+    
+        const property = data;
+        titleEl.textContent = property.title;
+        shortEl.textContent = property.short_description || "";
+        fullEl.textContent = property.full_description || "Il proprietario non ha ancora inserito una descrizione completa.";
+    
+        metaEl.innerHTML = `
+          <span class=\"badge\">${property.zone || "Roma"}</span>
+          <span class=\"badge badge-strong\">${property.guests || "?"} ospiti</span>
+          <span class=\"badge\">${property.status === "published" ? "Annuncio online" : "Bozza"}</span>
+        `;
+    
+        priceEl.textContent = property.base_price
+          ? `A partire da ${property.base_price} €/notte`
+          : "Prezzo su richiesta";
+    
+        whatsappLink.href = `https://wa.me/393345071226?text=${encodeURIComponent(
+          `Ciao, vorrei informazioni sull'alloggio "${property.title}"`
+        )}`;
+    
+        loadGallery(property.property_photos || [], property.cover_photo_url, property.title);
+      }
+    
+      loadProperty();
+  })();
 </script>
 
 </body>
