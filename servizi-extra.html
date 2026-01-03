@@ -49,15 +49,20 @@
 
     <section class="section section-light">
       <div class="container">
-        <div class="filter-bar fade-in">
-          <input type="search" id="service-search" class="filter-input" placeholder="Cerca per titolo o descrizione" />
-          <select id="service-category" class="filter-select">
-            <option value="">Tutte le categorie</option>
-            <option value="transport">Trasporti</option>
-            <option value="cucina">Cucina</option>
-            <option value="fotografia">Servizio fotografico</option>
-          </select>
+        <div class="services-toolbar fade-in">
+          <div class="filter-bar">
+            <input type="search" id="service-search" class="filter-input" placeholder="Cerca per titolo o descrizione" />
+            <select id="service-category" class="filter-select">
+              <option value="">Tutte le categorie</option>
+            </select>
+          </div>
+          <div class="pill-group" id="category-pills"></div>
+          <div class="toolbar-meta">
+            <span id="services-counter" class="small-label"></span>
+            <span id="services-status" class="small-label"></span>
+          </div>
         </div>
+
         <div id="services-public" class="cards-grid services-grid"></div>
         <p id="services-public-note" class="note"></p>
       </div>
@@ -79,10 +84,49 @@
   </script>
   <script>
     let allServices = [];
+    let availableCategories = [];
 
     function euros(cents) {
       const n = Math.round(cents || 0);
       return (n / 100).toFixed(2).replace(".", ",");
+    }
+
+    function formatDays(days) {
+      if (!days) return "Giorni su richiesta";
+      return days
+        .split(",")
+        .map((d) => d.trim())
+        .filter(Boolean)
+        .join(" · ");
+    }
+
+    function startingPrice(options) {
+      if (!options || options.length === 0) return null;
+      const prices = options.map((opt) => opt.price_cents || 0);
+      const min = Math.min(...prices);
+      return euros(min);
+    }
+
+    function updateToolbar(count, total) {
+      const counter = document.getElementById("services-counter");
+      const status = document.getElementById("services-status");
+      counter.textContent = `${count} servizi trovati` + (total && count !== total ? ` su ${total}` : "");
+      status.textContent = count === 0 ? "Nessun servizio corrisponde ai filtri attuali" : "Seleziona un servizio per contattare il fornitore";
+    }
+
+    function renderCategoryPills() {
+      const pills = document.getElementById("category-pills");
+      if (!pills) return;
+      pills.innerHTML = ["Tutte", ...availableCategories]
+        .map((cat) => `<button class="pill" data-pill="${cat || ""}">${cat || "Tutte"}</button>`)
+        .join("");
+      pills.querySelectorAll("[data-pill]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const value = btn.dataset.pill;
+          document.getElementById("service-category").value = value === "Tutte" ? "" : value;
+          applyFilters();
+        });
+      });
     }
 
     function renderServices(list) {
@@ -93,14 +137,18 @@
       if (!list || list.length === 0) {
         listEl.innerHTML = "";
         noteEl.textContent = "Nessun servizio disponibile al momento. Riprova più tardi.";
+        updateToolbar(0, allServices.length || 0);
         return;
       }
 
       noteEl.textContent = "";
       listEl.innerHTML = list
         .map((svc) => {
-          const options = (svc.extra_service_options || []).filter((opt) => opt.is_active !== false);
+          const options = (svc.extra_service_options || [])
+            .filter((opt) => opt.is_active !== false)
+            .sort((a, b) => (a.price_cents || 0) - (b.price_cents || 0));
           const provider = svc.providers || {};
+          const startPrice = startingPrice(options);
           return `
           <div class="card service-card lift-on-hover fade-in">
             <div class="card-header-row">
@@ -108,7 +156,10 @@
                 <p class="eyebrow">${svc.category || "Generale"}</p>
                 <h3>${svc.title}</h3>
               </div>
-              <span class="badge badge-strong">${provider.name || "Partner"}</span>
+              <div class="provider-badge">
+                <span class="badge badge-strong">${provider.name || "Partner"}</span>
+                ${startPrice ? `<span class="small-label">da € ${startPrice}</span>` : ""}
+              </div>
             </div>
             <p>${svc.description || ""}</p>
             <ul class="service-options">
@@ -118,7 +169,7 @@
                     <li>
                       <div>
                         <strong>${opt.name}</strong>
-                        <span class="small-label">${opt.available_days || "Giorni su richiesta"}</span>
+                        <span class="small-label">${formatDays(opt.available_days)}</span>
                         <p>${opt.description || ""}</p>
                       </div>
                       <span class="badge">€ ${euros(opt.price_cents || 0)}</span>
@@ -135,6 +186,8 @@
         `;
         })
         .join("");
+
+      updateToolbar(list.length, allServices.length);
     }
 
     function applyFilters() {
@@ -161,6 +214,18 @@
         return;
       }
       allServices = data || [];
+
+      availableCategories = Array.from(
+        new Set(allServices.map((svc) => svc.category).filter(Boolean))
+      );
+      const categorySelect = document.getElementById("service-category");
+      if (categorySelect) {
+        categorySelect.innerHTML = ["", ...availableCategories]
+          .map((cat) => `<option value="${cat}">${cat || "Tutte"}</option>`)
+          .join("");
+      }
+
+      renderCategoryPills();
       applyFilters();
     }
 
