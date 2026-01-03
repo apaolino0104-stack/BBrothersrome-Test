@@ -206,7 +206,7 @@
       if (!propertyId) return;
       messageEl.textContent = "";
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("properties")
         .select("*, property_photos(*)")
         .eq("id", propertyId)
