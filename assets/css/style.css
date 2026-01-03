@@ -933,6 +933,42 @@ img {
   gap: var(--spacing-xl);
 }
 
+.services-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.pill {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--white);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pill:hover {
+  border-color: var(--gold);
+  color: var(--gold-dark);
+  box-shadow: var(--shadow-sm);
+}
+
+.toolbar-meta {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+  color: var(--text-muted);
+}
+
 .service-card {
   background: var(--white);
   border: 1px solid rgba(0, 0, 0, 0.06);
@@ -957,6 +993,13 @@ img {
   margin-bottom: var(--spacing-md);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   padding-bottom: var(--spacing-sm);
+}
+
+.provider-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
 }
 
 .service-options {
@@ -1031,6 +1074,21 @@ img {
   color: var(--text-muted);
   margin-bottom: 6px;
   display: block;
+}
+
+@media (max-width: 768px) {
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .services-toolbar {
+    gap: var(--spacing-sm);
+  }
+
+  .toolbar-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 /* KPI / Metrics - FIXED COLLISION */
