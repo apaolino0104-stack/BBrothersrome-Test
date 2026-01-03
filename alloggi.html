@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Alloggi – B&Brother’s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" type="image/png" href="assets/images/logo-bbrothers.png" />
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="container header-inner fade-in">
+      <a href="ospiti.html" class="logo">
+        <img src="assets/images/logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+        <div class="logo-text">
+          <span class="logo-title">B&Brother’s</span>
+          <span class="logo-subtitle">Gestione affitti brevi a Roma</span>
+        </div>
+      </a>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Apri il menu" />
+      <label for="nav-toggle" class="menu-toggle">
+        <span class="menu-toggle-box">
+          <span class="menu-toggle-line"></span>
+          <span class="menu-toggle-line"></span>
+          <span class="menu-toggle-line"></span>
+        </span>
+        <span class="menu-toggle-text">Menu</span>
+      </label>
+      <nav class="main-nav">
+        <a href="ospiti.html" class="nav-link">Home ospiti</a>
+        <a href="alloggi.html" class="nav-link nav-link-active">Tutti gli alloggi</a>
+        <a href="servizi-extra.html" class="nav-link">Servizi extra</a>
+        <a href="ospiti.html#come-funziona-ospiti" class="nav-link">Come funziona</a>
+        <a href="contatti.html" class="nav-link">Contatti</a>
+      </nav>
+      <a href="proprietari.html" class="nav-link nav-link-ghost">Sei un proprietario?</a>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="page-hero">
+      <div class="container fade-in">
+        <p class="eyebrow">Alloggi</p>
+        <h1>I nostri appartamenti a Roma</h1>
+        <p class="page-hero-subtitle">
+          Una selezione di alloggi curati, in zone strategiche della città.
+          Contattaci su WhatsApp per disponibilità e preventivi aggiornati.
+        </p>
+      </div>
+    </section>
+
+    <section class="section section-light">
+      <div class="container">
+        <div class="filter-bar fade-in delay-1">
+          <div class="filter-search" role="search">
+            <label class="filter-label" for="alloggi-search">Cerca:</label>
+            <input type="search" id="alloggi-search" class="filter-search-input"
+              placeholder="Cerca un alloggio per nome o zona" aria-label="Cerca un alloggio per nome o zona" />
+          </div>
+          <span class="filter-label">Filtra per:</span>
+          <select id="filter-zone" class="filter-select">
+            <option value="">Tutte le zone</option>
+          </select>
+          <select id="filter-guests" class="filter-select">
+            <option value="">Tutti i posti letto</option>
+          </select>
+          <select id="filter-type" class="filter-select">
+            <option value="">Tutte le tipologie</option>
+          </select>
+        </div>
+
+        <div id="public-properties" class="cards-grid listings-grid">
+          <!-- riempito da Supabase -->
+        </div>
+
+        <p class="note fade-in delay-3" id="public-note"></p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
+      <p>WhatsApp: +39 334 507 1226 · Email: a.paolino0104@gmail.com</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+    const PHOTO_BUCKET = "property-photos";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+
+  <script>
+    function publicUrlFromPath(path) {
+      if (!path) return null;
+      if (path.startsWith("http")) return path;
+      const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+      return data?.publicUrl || null;
+    }
+
+    const listEl = document.getElementById("public-properties");
+    const noteEl = document.getElementById("public-note");
+    const searchInput = document.getElementById("alloggi-search");
+    const zoneSelect = document.getElementById("filter-zone");
+    const guestsSelect = document.getElementById("filter-guests");
+    const typeSelect = document.getElementById("filter-type");
+
+    const state = {
+      properties: [],
+      filters: {
+        search: "",
+        zone: "",
+        guests: "",
+        type: "",
+      },
+    };
+
+    function getPropertyType(prop) {
+      return (prop.property_type || prop.typology || prop.type || "").trim();
+    }
+
+    function renderProperties(list) {
+      if (!listEl) return;
+
+      if (!list || list.length === 0) {
+        listEl.innerHTML = state.properties.length
+          ? "<p>Nessun alloggio corrisponde ai filtri attivi.</p>"
+          : "<p>Nessun alloggio pubblicato al momento.</p>";
+        if (noteEl) {
+          noteEl.textContent = state.properties.length
+            ? "Modifica i filtri o prova una nuova ricerca."
+            : "Gli alloggi saranno visibili man mano che i proprietari li pubblicano.";
+        }
+        return;
+      }
+
+      listEl.innerHTML = list
+        .map((p) => {
+          const photoList = Array.isArray(p.property_photos) ? [...p.property_photos] : [];
+          const sortedPhotos = photoList.sort((a, b) => {
+            if (a.is_cover === b.is_cover) return (a.sort_order || 0) - (b.sort_order || 0);
+            return a.is_cover ? -1 : 1;
+          });
+          const chosenPhoto = sortedPhotos[0];
+          const coverUrl = chosenPhoto ? publicUrlFromPath(chosenPhoto.path) : publicUrlFromPath(p.cover_photo_url);
+
+          return `
+        <a class="listing-card listing-large listing-link lift-on-hover fade-in" href="property.html?id=${p.id}">
+          ${coverUrl ? `<img src="${coverUrl}" alt="Foto di ${p.title}" class="listing-cover" />` : ""}
+          <div class="listing-badge-row">
+            <span class="badge">${p.zone || "Roma"}</span>
+            <span class="badge badge-strong">${p.guests || "?"} ospiti</span>
+          </div>
+          <h2>${p.title}</h2>
+          <p>${p.short_description || ""}</p>
+          <ul class="tags">
+            ${p.check_in_mode ? `<li>${p.check_in_mode}</li>` : ""}
+          </ul>
+          <div class="listing-footer">
+            <span class="rating">Annuncio gestito da B&Brother’s</span>
+            <span class="btn btn-outline-sm">Apri la scheda</span>
+          </div>
+        </a>`;
+        })
+        .join("");
+
+      if (noteEl) {
+        noteEl.textContent = `Mostrati ${list.length} di ${state.properties.length} alloggi disponibili.`;
+      }
+    }
+
+    function renderOptions(selectEl, values, placeholder, formatFn = (value) => ({ value, label: value })) {
+      if (!selectEl) return;
+      const uniqueValues = Array.from(new Set(values.filter(Boolean)));
+      if (uniqueValues.length === 0) {
+        selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+        return;
+      }
+      const options = [`<option value="">${placeholder}</option>`];
+      uniqueValues.forEach((value) => {
+        const { value: optionValue = value, label = value } = formatFn(value) || {};
+        options.push(`<option value="${optionValue}">${label}</option>`);
+      });
+      selectEl.innerHTML = options.join("");
+    }
+
+    function restoreSelection(selectEl, previousValue, allowedValues) {
+      if (!selectEl) return "";
+      if (previousValue && allowedValues.some((value) => value.toLowerCase() === previousValue.toLowerCase())) {
+        selectEl.value = previousValue;
+        return previousValue;
+      }
+      selectEl.value = "";
+      return "";
+    }
+
+    function populateFilterOptions(properties) {
+      const previousSelections = {
+        zone: zoneSelect?.value || "",
+        guests: guestsSelect?.value || "",
+        type: typeSelect?.value || "",
+      };
+
+      const zones = Array.from(
+        new Set(
+          properties
+            .map((p) => (p.zone || "").trim())
+            .filter((value) => value.length > 0)
+        )
+      ).sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" }));
+
+      const guests = Array.from(
+        new Set(
+          properties
+            .map((p) => (typeof p.guests === "number" ? p.guests : parseInt(p.guests, 10)))
+            .filter((value) => !Number.isNaN(value))
+        )
+      )
+        .sort((a, b) => a - b)
+        .map((value) => `${value}`);
+
+      const types = Array.from(
+        new Set(
+          properties
+            .map((p) => getPropertyType(p))
+            .filter((value) => value.length > 0)
+        )
+      ).sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" }));
+
+      renderOptions(zoneSelect, zones, "Tutte le zone");
+      renderOptions(
+        guestsSelect,
+        guests,
+        "Tutti i posti letto",
+        (value) => ({
+          value,
+          label: parseInt(value, 10) === 1 ? `${value} ospite` : `${value} ospiti`,
+        })
+      );
+      renderOptions(typeSelect, types, "Tutte le tipologie");
+
+      state.filters.zone = restoreSelection(zoneSelect, previousSelections.zone, zones);
+      state.filters.guests = restoreSelection(guestsSelect, previousSelections.guests, guests);
+      state.filters.type = restoreSelection(typeSelect, previousSelections.type, types);
+    }
+
+    function matchesFilters(property) {
+      const { search, zone, guests, type } = state.filters;
+      const normalizedSearch = search.trim().toLowerCase();
+      const matchesSearch = !normalizedSearch
+        || [property.title, property.zone, property.short_description]
+          .some((field) => (field || "").toLowerCase().includes(normalizedSearch));
+
+      const matchesZone = !zone || (property.zone || "").toLowerCase() === zone.toLowerCase();
+      const matchesGuests = !guests || String(property.guests || "") === guests;
+      const propType = getPropertyType(property);
+      const matchesType = !type || propType.toLowerCase() === type.toLowerCase();
+
+      return matchesSearch && matchesZone && matchesGuests && matchesType;
+    }
+
+    function applyFilters() {
+      if (!state.properties.length) {
+        renderProperties([]);
+        return;
+      }
+
+      const filtered = state.properties.filter((prop) => matchesFilters(prop));
+      renderProperties(filtered);
+    }
+
+    async function loadPublicProperties() {
+      if (!listEl) return;
+      listEl.innerHTML = "<p>Caricamento alloggi...</p>";
+
+      const { data, error } = await supabase
+        .from("properties")
+        .select("*, property_photos(path,is_cover,sort_order)")
+        .eq("status", "published")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error(error);
+        listEl.innerHTML = "<p>Errore nel caricamento degli alloggi.</p>";
+        return;
+      }
+
+      state.properties = Array.isArray(data) ? data : [];
+      populateFilterOptions(state.properties);
+      applyFilters();
+    }
+
+    loadPublicProperties();
+
+    searchInput?.addEventListener("input", (event) => {
+      state.filters.search = event.target.value;
+      applyFilters();
+    });
+
+    zoneSelect?.addEventListener("change", (event) => {
+      state.filters.zone = event.target.value;
+      applyFilters();
+    });
+
+    guestsSelect?.addEventListener("change", (event) => {
+      state.filters.guests = event.target.value;
+      applyFilters();
+    });
+
+    typeSelect?.addEventListener("change", (event) => {
+      state.filters.type = event.target.value;
+      applyFilters();
+    });
+  </script>
+
+</body>
+
+</html>

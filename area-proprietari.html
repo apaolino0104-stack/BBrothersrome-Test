@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Area proprietari – B&Brother’s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner fade-in">
+    <a href="proprietari.html" class="logo">
+      <img src="assets/images/logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+      <div class="logo-text">
+        <span class="logo-title">B&Brother’s</span>
+        <span class="logo-subtitle">Gestione affitti brevi a Roma</span>
+      </div>
+    </a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Apri il menu" />
+    <label for="nav-toggle" class="menu-toggle">
+      <span class="menu-toggle-box">
+        <span class="menu-toggle-line"></span>
+        <span class="menu-toggle-line"></span>
+        <span class="menu-toggle-line"></span>
+      </span>
+      <span class="menu-toggle-text">Menu</span>
+    </label>
+    <nav class="main-nav">
+      <a href="proprietari.html" class="nav-link">Home proprietari</a>
+      <a href="proprietari.html#come-funziona" class="nav-link">Come funziona</a>
+      <a href="proprietari.html#servizi-proprietari" class="nav-link">Servizi</a>
+      <a href="proprietari.html#commissione" class="nav-link">Commissione</a>
+      <a href="contatti.html" class="nav-link">Contatti</a>
+      <a href="login.html" class="nav-link nav-link-active">🔑 Area proprietari</a>
+    </nav>
+    <a href="ospiti.html" class="nav-link nav-link-ghost">Vuoi prenotare un soggiorno?</a>
+  </div>
+</header>
+
+<main>
+
+<section class="page-hero">
+  <div class="container fade-in">
+    <p class="eyebrow">Area proprietari</p>
+    <h1>Le tue strutture</h1>
+    <p class="page-hero-subtitle">
+      Gestisci rapidamente gli annunci: rivedi la lista, aggiungi nuove proprietà o entra in modifica completa su una pagina dedicata.
+    </p>
+  </div>
+</section>
+
+<section class="section section-light">
+  <div class="container">
+    <div class="dashboard-bar">
+      <div>
+        <p class="small-label">Accesso proprietario</p>
+        <strong id="owner-email">&nbsp;</strong>
+      </div>
+      <div class="dashboard-actions">
+        <a href="area-proprietari-nuova.html" class="btn btn-primary">Aggiungi proprietà</a>
+        <button id="btn-logout" class="btn btn-outline">Logout</button>
+      </div>
+    </div>
+
+    <section style="margin-top: 14px;">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow" style="color: var(--text-muted);">Portfolio</p>
+          <h2>Le tue strutture</h2>
+          <p class="section-subtitle">Card compatte con stato, zona e copertina. Usa “Modifica” per aprire la pagina di editing completa.</p>
+        </div>
+        <a href="area-proprietari-nuova.html" class="btn btn-primary">+ Aggiungi proprietà</a>
+      </div>
+      <div id="my-properties" class="cards-grid"></div>
+    </section>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
+    <p>WhatsApp: +39 334 507 1226 · Email: a.paolino0104@gmail.com</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+  const PHOTO_BUCKET = "property-photos";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
+
+<script>
+  function publicUrlFromPath(path) {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    return data?.publicUrl || null;
+  }
+
+  async function getCurrentUser() {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      window.location.href = "login.html";
+      return null;
+    }
+    return data.user;
+  }
+
+  let currentUser = null;
+  let propertiesCache = [];
+  let selectedPropertyId = null;
+
+  document.getElementById("btn-logout").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    window.location.href = "login.html";
+  });
+
+  async function fetchCoverMap(ids) {
+    if (!ids || ids.length === 0) return {};
+    const { data, error } = await supabase
+      .from("property_photos")
+      .select("*")
+      .in("property_id", ids)
+      .order("is_cover", { ascending: false })
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.warn("Impossibile recuperare le cover", error.message);
+      return {};
+    }
+
+    const map = {};
+    (data || []).forEach((photo) => {
+      if (!map[photo.property_id]) {
+        map[photo.property_id] = photo;
+      }
+    });
+    return map;
+  }
+
+  async function loadMyProperties() {
+    const listEl = document.getElementById("my-properties");
+    listEl.innerHTML = "Caricamento...";
+
+    const { data, error } = await supabase
+      .from("properties")
+      .select("*")
+      .eq("owner_id", currentUser.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      listEl.innerHTML = "Errore nel caricamento: " + error.message;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      listEl.innerHTML = `
+        <article class="listing-card">
+          <h3>Nessuna struttura</h3>
+          <p class="section-subtitle">Inizia aggiungendo la tua prima proprietà: copertina, dettagli e pubblicazione.</p>
+          <a class="btn btn-primary" href="area-proprietari-nuova.html">Aggiungi proprietà</a>
+        </article>
+      `;
+      return;
+    }
+
+    const ids = data.map((p) => p.id);
+    const coverMap = await fetchCoverMap(ids);
+
+    listEl.innerHTML = data
+      .map((p) => {
+        const coverPath = coverMap[p.id]?.path || p.cover_photo_url;
+        const coverUrl = publicUrlFromPath(coverPath) || "";
+        const badge = p.status === "published" ? "badge-strong" : "";
+        return `
+          <article class="listing-card lift-on-hover">
+            ${coverUrl ? `<img src="${coverUrl}" alt="Copertina ${p.title}" class="listing-cover" loading="lazy" />` : ""}
+            <div class="listing-badge-row" style="margin-bottom: 8px;">
+              <span class="badge ${badge}">${p.status || "bozza"}</span>
+              <span class="badge">${p.zone || "Roma"}</span>
+            </div>
+            <h3>${p.title}</h3>
+            <p>${p.short_description || ""}</p>
+            <div class="listing-badge-row" style="margin-top: 10px;">
+              ${p.guests ? `<span class="badge">${p.guests} ospiti</span>` : ""}
+              ${p.base_price ? `<span class="badge">€${p.base_price} / notte</span>` : ""}
+            </div>
+            <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+              <a class="btn btn-outline" href="area-proprietari-modifica.html?id=${p.id}">Modifica</a>
+            </div>
+          </article>
+        `;
+      })
+      .join("");
+  }
+
+  (async () => {
+    currentUser = await getCurrentUser();
+    if (!currentUser) return;
+    document.getElementById("owner-email").textContent = currentUser.email;
+    loadMyProperties();
+  })();
+</script>
+
+</body>
+</html>

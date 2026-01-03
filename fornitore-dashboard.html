@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard fornitori – B&Brother’s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner fade-in">
+    <a href="index.html" class="logo">
+      <img src="assets/images/logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+      <div class="logo-text">
+        <span class="logo-title">B&Brother’s</span>
+        <span class="logo-subtitle">Dashboard fornitori</span>
+      </div>
+    </a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Apri il menu" />
+    <label for="nav-toggle" class="menu-toggle">
+      <span class="menu-toggle-box">
+        <span class="menu-toggle-line"></span>
+        <span class="menu-toggle-line"></span>
+        <span class="menu-toggle-line"></span>
+      </span>
+      <span class="menu-toggle-text">Menu</span>
+    </label>
+    <nav class="main-nav"></nav>
+    <button id="logout-btn" class="btn btn-ghost">Logout</button>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero">
+    <div class="container fade-in">
+      <p class="eyebrow">Servizi extra</p>
+      <h1>Gestisci i servizi che offri agli ospiti</h1>
+      <p class="page-hero-subtitle" id="provider-summary">Caricamento profilo fornitore...</p>
+      <div class="dashboard-actions">
+        <a href="fornitore-servizio.html" class="btn btn-primary">+ Aggiungi nuovo servizio</a>
+        <span id="dashboard-message" class="note"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="container">
+      <div id="services-list" class="cards-grid"></div>
+      <p id="services-note" class="note"></p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
+    <p>WhatsApp: +39 334 507 1226 · Email: a.paolino0104@gmail.com</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
+<script>
+  let currentUser = null;
+  let provider = null;
+  let services = [];
+
+  const servicesEl = document.getElementById("services-list");
+  const servicesNote = document.getElementById("services-note");
+  const providerSummary = document.getElementById("provider-summary");
+  const dashMessage = document.getElementById("dashboard-message");
+
+  function getQueryParam(key) {
+    return new URLSearchParams(window.location.search).get(key);
+  }
+
+  async function fetchProvider(userId) {
+    const { data, error } = await supabase.from("providers").select("*").eq("user_id", userId).single();
+    if (error || !data) return null;
+    return data;
+  }
+
+  async function ensureAuth() {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      window.location.href = "fornitore-login.html";
+      return null;
+    }
+    currentUser = data.user;
+    provider = await fetchProvider(currentUser.id);
+    if (!provider) {
+      await supabase.auth.signOut();
+      window.location.href = "fornitore-login.html";
+      return null;
+    }
+    providerSummary.textContent = `Ciao ${provider.name || ""}, gestisci qui i tuoi servizi attivi.`;
+    return provider;
+  }
+
+  function renderServices(list) {
+    if (!servicesEl) return;
+    if (!list || list.length === 0) {
+      servicesEl.innerHTML = "";
+      servicesNote.textContent = "Nessun servizio presente. Aggiungine uno nuovo per iniziare.";
+      return;
+    }
+
+    servicesNote.textContent = "";
+    servicesEl.innerHTML = list
+      .map((svc) => {
+        const options = Array.isArray(svc.extra_service_options) ? svc.extra_service_options : [];
+        const activeOptions = options.filter((opt) => opt.is_active !== false);
+        const optCount = activeOptions.length || options.length;
+        return `
+          <div class="card service-card lift-on-hover">
+            <div class="card-header-row">
+              <div>
+                <p class="eyebrow">${svc.category || "Generale"}</p>
+                <h3>${svc.title}</h3>
+              </div>
+              <span class="badge ${svc.is_active ? "badge-strong" : "badge-muted"}">
+                ${svc.is_active ? "Attivo" : "Disattivato"}
+              </span>
+            </div>
+            <p>${svc.description || ""}</p>
+            <p class="small-label">Opzioni disponibili: ${optCount}</p>
+            <div class="card-actions">
+              <a class="btn btn-outline-sm" href="fornitore-servizio.html?service_id=${svc.id}">Modifica</a>
+              <button class="btn btn-ghost" data-toggle="${svc.id}" data-active="${svc.is_active}">
+                ${svc.is_active ? "Disattiva" : "Attiva"}
+              </button>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    document.querySelectorAll("[data-toggle]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.toggle;
+        const current = btn.dataset.active === "true";
+        const { error } = await supabase
+          .from("extra_services")
+          .update({ is_active: !current })
+          .eq("id", id)
+          .eq("provider_id", provider.id);
+        if (error) {
+          dashMessage.textContent = "Errore nel cambio stato: " + error.message;
+        } else {
+          dashMessage.textContent = "Stato aggiornato.";
+          loadServices();
+        }
+      });
+    });
+  }
+
+  async function loadServices() {
+    if (!provider) return;
+    servicesEl.innerHTML = "<p>Caricamento servizi...</p>";
+    const { data, error } = await supabase
+      .from("extra_services")
+      .select("id,title,description,category,is_active, extra_service_options(id,is_active)")
+      .eq("provider_id", provider.id)
+      .order("created_at", { ascending: false });
+    if (error) {
+      servicesEl.innerHTML = "<p>Errore nel caricamento dei servizi.</p>";
+      return;
+    }
+    services = data || [];
+    renderServices(services);
+  }
+
+  async function init() {
+    const ok = await ensureAuth();
+    if (!ok) return;
+    if (getQueryParam("saved")) {
+      dashMessage.textContent = "Servizio salvato correttamente.";
+    }
+    await loadServices();
+  }
+
+  document.getElementById("logout-btn")?.addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    window.location.href = "fornitore-login.html";
+  });
+
+  init();
+</script>
+</body>
+</html>

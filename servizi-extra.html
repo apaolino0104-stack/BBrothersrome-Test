@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Servizi extra – B&Brother’s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/style.css?v=2" />
+  <link rel="icon" type="image/png" href="assets/images/logo-bbrothers.png" />
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="container header-inner fade-in">
+      <a href="ospiti.html" class="logo">
+        <img src="assets/images/logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+        <div class="logo-text">
+          <span class="logo-title">B&Brother’s</span>
+          <span class="logo-subtitle">Servizi extra per gli ospiti</span>
+        </div>
+      </a>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Apri il menu" />
+      <label for="nav-toggle" class="menu-toggle">
+        <span class="menu-toggle-box">
+          <span class="menu-toggle-line"></span>
+          <span class="menu-toggle-line"></span>
+          <span class="menu-toggle-line"></span>
+        </span>
+        <span class="menu-toggle-text">Menu</span>
+      </label>
+      <nav class="main-nav">
+        <a href="ospiti.html" class="nav-link">Home ospiti</a>
+        <a href="alloggi.html" class="nav-link">Tutti gli alloggi</a>
+        <a href="servizi-extra.html" class="nav-link nav-link-active">Servizi extra</a>
+        <a href="contatti.html" class="nav-link">Contatti</a>
+      </nav>
+      <a href="proprietari.html" class="nav-link nav-link-ghost">Sei un proprietario?</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero">
+      <div class="container fade-in">
+        <p class="eyebrow">Ospiti</p>
+        <h1>Servizi aggiuntivi per personalizzare il soggiorno</h1>
+        <p class="page-hero-subtitle">Trasporti, cucina, fotografia e altri servizi offerti dai nostri partner.</p>
+      </div>
+    </section>
+
+    <section class="section section-light">
+      <div class="container">
+        <div class="filter-bar fade-in">
+          <input type="search" id="service-search" class="filter-input" placeholder="Cerca per titolo o descrizione" />
+          <select id="service-category" class="filter-select">
+            <option value="">Tutte le categorie</option>
+            <option value="transport">Trasporti</option>
+            <option value="cucina">Cucina</option>
+            <option value="fotografia">Servizio fotografico</option>
+          </select>
+        </div>
+        <div id="services-public" class="cards-grid services-grid"></div>
+        <p id="services-public-note" class="note"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
+      <p>WhatsApp: +39 334 507 1226 · Email: a.paolino0104@gmail.com</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  <script>
+    let allServices = [];
+
+    function euros(cents) {
+      const n = Math.round(cents || 0);
+      return (n / 100).toFixed(2).replace(".", ",");
+    }
+
+    function renderServices(list) {
+      const listEl = document.getElementById("services-public");
+      const noteEl = document.getElementById("services-public-note");
+      if (!listEl) return;
+
+      if (!list || list.length === 0) {
+        listEl.innerHTML = "";
+        noteEl.textContent = "Nessun servizio disponibile al momento. Riprova più tardi.";
+        return;
+      }
+
+      noteEl.textContent = "";
+      listEl.innerHTML = list
+        .map((svc) => {
+          const options = (svc.extra_service_options || []).filter((opt) => opt.is_active !== false);
+          const provider = svc.providers || {};
+          return `
+          <div class="card service-card lift-on-hover fade-in">
+            <div class="card-header-row">
+              <div>
+                <p class="eyebrow">${svc.category || "Generale"}</p>
+                <h3>${svc.title}</h3>
+              </div>
+              <span class="badge badge-strong">${provider.name || "Partner"}</span>
+            </div>
+            <p>${svc.description || ""}</p>
+            <ul class="service-options">
+              ${options
+              .map(
+                (opt) => `
+                    <li>
+                      <div>
+                        <strong>${opt.name}</strong>
+                        <span class="small-label">${opt.available_days || "Giorni su richiesta"}</span>
+                        <p>${opt.description || ""}</p>
+                      </div>
+                      <span class="badge">€ ${euros(opt.price_cents || 0)}</span>
+                    </li>
+                  `
+              )
+              .join("")}
+            </ul>
+            <div class="card-actions">
+              ${provider.email ? `<a class="btn btn-outline-sm" href="mailto:${provider.email}?subject=Servizio ${encodeURIComponent(svc.title)}">Contatta il fornitore</a>` : ""}
+              ${provider.phone ? `<a class="btn btn-ghost" href="https://wa.me/${provider.phone.replace(/\D/g, "")}" target="_blank">WhatsApp</a>` : ""}
+            </div>
+          </div>
+        `;
+        })
+        .join("");
+    }
+
+    function applyFilters() {
+      const term = document.getElementById("service-search").value.toLowerCase();
+      const cat = document.getElementById("service-category").value;
+      const filtered = allServices.filter((svc) => {
+        const matchesText = (svc.title || "").toLowerCase().includes(term) || (svc.description || "").toLowerCase().includes(term);
+        const matchesCat = !cat || (svc.category || "").toLowerCase() === cat.toLowerCase();
+        return matchesText && matchesCat;
+      });
+      renderServices(filtered);
+    }
+
+    async function loadServices() {
+      const listEl = document.getElementById("services-public");
+      listEl.innerHTML = "<p>Caricamento servizi...</p>";
+      const { data, error } = await supabase
+        .from("extra_services")
+        .select("id,title,description,category,is_active, providers(name,email,phone), extra_service_options(*)")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      if (error) {
+        listEl.innerHTML = "<p>Errore nel caricamento dei servizi extra.</p>";
+        return;
+      }
+      allServices = data || [];
+      applyFilters();
+    }
+
+    document.getElementById("service-search")?.addEventListener("input", applyFilters);
+    document.getElementById("service-category")?.addEventListener("change", applyFilters);
+
+    loadServices();
+  </script>
+</body>
+
+</html>

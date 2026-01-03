@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Contatti – B&Brother’s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" type="image/png" href="assets/images/logo-bbrothers.png" />
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="container header-inner fade-in">
+      <a href="proprietari.html" class="logo">
+        <img src="assets/images/logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+        <div class="logo-text">
+          <span class="logo-title">B&Brother’s</span>
+          <span class="logo-subtitle">Gestione affitti brevi a Roma</span>
+        </div>
+      </a>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Apri il menu" />
+      <label for="nav-toggle" class="menu-toggle">
+        <span class="menu-toggle-box">
+          <span class="menu-toggle-line"></span>
+          <span class="menu-toggle-line"></span>
+          <span class="menu-toggle-line"></span>
+        </span>
+        <span class="menu-toggle-text">Menu</span>
+      </label>
+      <nav class="main-nav">
+        <a href="proprietari.html" class="nav-link">Home proprietari</a>
+        <a href="proprietari.html#come-funziona" class="nav-link">Come funziona</a>
+        <a href="proprietari.html#servizi-proprietari" class="nav-link">Servizi</a>
+        <a href="proprietari.html#commissione" class="nav-link">Commissione</a>
+        <a href="contatti.html" class="nav-link nav-link-active">Contatti</a>
+        <a href="login.html" class="nav-link">🔑 Area proprietari</a>
+      </nav>
+      <a href="ospiti.html" class="nav-link nav-link-ghost">Vuoi prenotare un soggiorno?</a>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="page-hero">
+      <div class="container fade-in">
+        <p class="eyebrow">Contatti</p>
+        <h1>Parliamone direttamente.</h1>
+        <p class="page-hero-subtitle">
+          Raccontaci il tuo immobile o il soggiorno che stai cercando.
+          Ti rispondiamo il prima possibile con informazioni chiare e concrete.
+        </p>
+      </div>
+    </section>
+
+    <section class="section section-light">
+      <div class="container two-cols">
+        <div class="fade-in delay-1">
+          <h2>Contatto diretto</h2>
+          <p>
+            Preferisci scriverci subito? Ti basta un messaggio WhatsApp con:
+          </p>
+          <ul class="check-list">
+            <li>Indirizzo o zona dell’immobile (se sei un proprietario)</li>
+            <li>Date di arrivo e partenza (se cerchi un alloggio)</li>
+            <li>Numero di persone e necessità particolari</li>
+          </ul>
+          <div class="contact-highlight lift-on-hover">
+            <p><strong>WhatsApp</strong>: +39 334 507 1226</p>
+            <p><strong>Email</strong>: a.paolino0104@gmail.com</p>
+            <a href="https://wa.me/393345071226" class="btn btn-primary btn-full">Scrivi ora su WhatsApp</a>
+          </div>
+        </div>
+        <div class="fade-in delay-2">
+          <h2>Scrivici dal sito</h2>
+          <p class="small-label">Questo form è statico. Su Netlify puoi attivare facilmente la gestione form.</p>
+          <form class="contact-form">
+            <label>
+              Chi sei?
+              <select name="tipo">
+                <option value="proprietario">Sono un proprietario</option>
+                <option value="ospite">Sono un ospite</option>
+              </select>
+            </label>
+            <label>
+              Nome e cognome
+              <input type="text" name="nome" placeholder="Nome e cognome" />
+            </label>
+            <label>
+              Email
+              <input type="email" name="email" placeholder="nome@esempio.com" />
+            </label>
+            <label>
+              Messaggio
+              <textarea name="messaggio" rows="4"
+                placeholder="Raccontaci del tuo immobile o del soggiorno che cerchi"></textarea>
+            </label>
+            <button type="submit" class="btn btn-primary btn-full">Invia</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
+      <p>WhatsApp: +39 334 507 1226 · Email: a.paolino0104@gmail.com</p>
+    </div>
+  </footer>
+
+</body>
+
+</html>
