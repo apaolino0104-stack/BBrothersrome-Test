@@ -161,7 +161,7 @@
       document.getElementById("svc-category").value = data.category || "";
       document.getElementById("svc-active").checked = data.is_active !== false;
 
-      const { data: opts } = await supabase
+      const { data: opts } = await supabaseClient
         .from("extra_service_options")
         .select("*")
         .eq("service_id", serviceId)
@@ -209,7 +209,7 @@
       }
 
       if (serviceId) {
-        const { error } = await supabase
+        const { error } = await supabaseClient
           .from("extra_services")
           .update({ title, description: desc, category, is_active: isActive })
           .eq("id", serviceId)
@@ -219,7 +219,7 @@
           return;
         }
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from("extra_services")
           .insert({ title, description: desc, category, is_active: isActive, provider_id: provider.id })
           .select()

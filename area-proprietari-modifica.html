@@ -225,7 +225,7 @@
     async function loadExistingPhotos(property) {
       const gallery = document.getElementById("edit-photos");
       gallery.innerHTML = "<p class=\"small-label\">Caricamento foto...</p>";
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("property_photos")
         .select("*")
         .eq("property_id", property.id)
@@ -274,7 +274,7 @@
       const msg = document.getElementById("edit-message");
       msg.textContent = "Aggiornamento della copertina...";
 
-      const { error: resetError } = await supabase
+      const { error: resetError } = await supabaseClient
         .from("property_photos")
         .update({ is_cover: false })
         .eq("property_id", property.id);
@@ -284,7 +284,7 @@
         return;
       }
 
-      const { error: coverError } = await supabase
+      const { error: coverError } = await supabaseClient
         .from("property_photos")
         .update({ is_cover: true })
         .eq("id", photoId);
@@ -327,7 +327,7 @@
         return;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("properties")
         .select("*")
         .eq("id", propertyId)
@@ -368,7 +368,7 @@
       const status = document.getElementById("edit-status").value;
       const newPhotos = Array.from(document.getElementById("edit-photos-input").files || []);
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseClient
         .from("properties")
         .update({
           title,
@@ -389,7 +389,7 @@
       if (newPhotos.length > 0) {
         let coverUrl = null;
         const failedUploads = [];
-        const { count } = await supabase
+        const { count } = await supabaseClient
           .from("property_photos")
           .select("id", { count: "exact", head: true })
           .eq("property_id", currentProperty.id);
