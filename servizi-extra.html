@@ -151,7 +151,7 @@
     async function loadServices() {
       const listEl = document.getElementById("services-public");
       listEl.innerHTML = "<p>Caricamento servizi...</p>";
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("extra_services")
         .select("id,title,description,category,is_active, providers(name,email,phone), extra_service_options(*)")
         .eq("is_active", true)

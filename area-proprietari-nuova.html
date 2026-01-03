@@ -146,7 +146,7 @@
       const price = parseFloat(document.getElementById("prop-price").value || "0");
       const photoFiles = Array.from(document.getElementById("prop-photos").files || []);
 
-      const { data: propData, error: propError } = await supabase
+      const { data: propData, error: propError } = await supabaseClient
         .from("properties")
         .insert({
           owner_id: currentUser.id,
