@@ -86,7 +86,10 @@
 <script>
   const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClientLogin = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
 </script>
 
 <script>
@@ -96,7 +99,7 @@
 
   document.getElementById("btn-login").addEventListener("click", async () => {
     msg.textContent = "Accesso in corso...";
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabaseClientLogin.auth.signInWithPassword({
       email: emailInput.value,
       password: passwordInput.value,
     });
@@ -109,7 +112,7 @@
 
   document.getElementById("btn-signup").addEventListener("click", async () => {
     msg.textContent = "Registrazione in corso...";
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabaseClientLogin.auth.signUp({
       email: emailInput.value,
       password: passwordInput.value,
     });

@@ -68,14 +68,17 @@
 <script>
   const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClientFornitoreLogin = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
 </script>
 <script>
   const form = document.getElementById("provider-login-form");
   const msgEl = document.getElementById("login-message");
 
   async function redirectIfAlreadyLogged() {
-    const { data } = await supabase.auth.getUser();
+    const { data } = await supabaseClientFornitoreLogin.auth.getUser();
     if (data?.user) {
       const provider = await fetchProvider(data.user.id);
       if (provider) {
@@ -85,7 +88,11 @@
   }
 
   async function fetchProvider(userId) {
-    const { data, error } = await supabase.from("providers").select("*").eq("user_id", userId).single();
+    const { data, error } = await supabaseClientFornitoreLogin
+      .from("providers")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
     if (error || !data) return null;
     return data;
   }
@@ -97,7 +104,10 @@
     const email = document.getElementById("login-email").value.trim();
     const password = document.getElementById("login-password").value.trim();
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabaseClientFornitoreLogin.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error || !data.user) {
       msgEl.textContent = "Credenziali non valide. Riprova.";
       return;
@@ -106,7 +116,7 @@
     const provider = await fetchProvider(data.user.id);
     if (!provider) {
       msgEl.textContent = "Nessun profilo fornitore associato a questo account.";
-      await supabase.auth.signOut();
+      await supabaseClientFornitoreLogin.auth.signOut();
       return;
     }
 

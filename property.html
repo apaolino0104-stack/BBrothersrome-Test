@@ -84,7 +84,7 @@
   const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
   const PHOTO_BUCKET = "property-photos";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClientProperty = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 
 <script>
@@ -102,7 +102,7 @@
   function publicUrlFromPath(path) {
     if (!path) return null;
     if (path.startsWith("http")) return path;
-    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    const { data } = supabaseClientProperty.storage.from(PHOTO_BUCKET).getPublicUrl(path);
     return data?.publicUrl || null;
   }
 
@@ -203,7 +203,7 @@
     if (!propertyId) return;
     messageEl.textContent = "";
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClientProperty
       .from("properties")
       .select("*, property_photos(*)")
       .eq("id", propertyId)

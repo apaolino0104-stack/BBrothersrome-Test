@@ -72,7 +72,10 @@
 <script>
   const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClientServiziExtra = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
 </script>
 <script>
   let allServices = [];
@@ -148,7 +151,7 @@
   async function loadServices() {
     const listEl = document.getElementById("services-public");
     listEl.innerHTML = "<p>Caricamento servizi...</p>";
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClientServiziExtra
       .from("extra_services")
       .select("id,title,description,category,is_active, providers(name,email,phone), extra_service_options(*)")
       .eq("is_active", true)

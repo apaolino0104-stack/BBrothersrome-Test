@@ -108,18 +108,21 @@
   const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
   const PHOTO_BUCKET = "property-photos";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClientAreaProprietariNuova = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
 </script>
 <script>
   function publicUrlFromPath(path) {
     if (!path) return null;
     if (path.startsWith("http")) return path;
-    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    const { data } = supabaseClientAreaProprietariNuova.storage.from(PHOTO_BUCKET).getPublicUrl(path);
     return data?.publicUrl || null;
   }
 
   async function getCurrentUser() {
-    const { data, error } = await supabase.auth.getUser();
+    const { data, error } = await supabaseClientAreaProprietariNuova.auth.getUser();
     if (error || !data.user) {
       window.location.href = "login.html";
       return null;
@@ -142,7 +145,7 @@
     const price = parseFloat(document.getElementById("prop-price").value || "0");
     const photoFiles = Array.from(document.getElementById("prop-photos").files || []);
 
-    const { data: propData, error: propError } = await supabase
+    const { data: propData, error: propError } = await supabaseClientAreaProprietariNuova
       .from("properties")
       .insert({
         owner_id: currentUser.id,
@@ -170,7 +173,7 @@
       for (let i = 0; i < photoFiles.length; i++) {
         const file = photoFiles[i];
         const path = `${folderPath}/${Date.now()}-${i}-${file.name}`;
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseClientAreaProprietariNuova.storage
           .from(PHOTO_BUCKET)
           .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
 
@@ -179,7 +182,7 @@
           continue;
         }
 
-        const { error: insertError } = await supabase.from("property_photos").insert({
+        const { error: insertError } = await supabaseClientAreaProprietariNuova.from("property_photos").insert({
           property_id: propData.id,
           path,
           is_cover: i === 0,
@@ -197,7 +200,10 @@
       }
 
       if (coverUrl) {
-        await supabase.from("properties").update({ cover_photo_url: coverUrl }).eq("id", propData.id);
+        await supabaseClientAreaProprietariNuova
+          .from("properties")
+          .update({ cover_photo_url: coverUrl })
+          .eq("id", propData.id);
       }
 
       if (failedUploads.length > 0) {

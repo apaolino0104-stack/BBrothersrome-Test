@@ -88,7 +88,10 @@
 <script>
   const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClientFornitoreServizio = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
 </script>
 <script>
   let currentUser = null;
@@ -101,13 +104,17 @@
   const optionsContainer = document.getElementById("options-container");
 
   async function fetchProvider(userId) {
-    const { data, error } = await supabase.from("providers").select("*").eq("user_id", userId).single();
+    const { data, error } = await supabaseClientFornitoreServizio
+      .from("providers")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
     if (error || !data) return null;
     return data;
   }
 
   async function ensureAuth() {
-    const { data, error } = await supabase.auth.getUser();
+    const { data, error } = await supabaseClientFornitoreServizio.auth.getUser();
     if (error || !data.user) {
       window.location.href = "fornitore-login.html";
       return null;
@@ -115,7 +122,7 @@
     currentUser = data.user;
     provider = await fetchProvider(currentUser.id);
     if (!provider) {
-      await supabase.auth.signOut();
+      await supabaseClientFornitoreServizio.auth.signOut();
       window.location.href = "fornitore-login.html";
       return null;
     }
@@ -144,7 +151,11 @@
     if (!serviceId) return addOptionRow();
     modeLabel.textContent = "Modifica servizio";
     pageTitle.textContent = "Aggiorna le informazioni del servizio";
-    const { data, error } = await supabase.from("extra_services").select("*").eq("id", serviceId).single();
+    const { data, error } = await supabaseClientFornitoreServizio
+      .from("extra_services")
+      .select("*")
+      .eq("id", serviceId)
+      .single();
     if (error || !data) {
       messageEl.textContent = "Servizio non trovato.";
       return;
@@ -159,7 +170,7 @@
     document.getElementById("svc-category").value = data.category || "";
     document.getElementById("svc-active").checked = data.is_active !== false;
 
-    const { data: opts } = await supabase
+    const { data: opts } = await supabaseClientFornitoreServizio
       .from("extra_service_options")
       .select("*")
       .eq("service_id", serviceId)
@@ -207,7 +218,7 @@
     }
 
     if (serviceId) {
-      const { error } = await supabase
+      const { error } = await supabaseClientFornitoreServizio
         .from("extra_services")
         .update({ title, description: desc, category, is_active: isActive })
         .eq("id", serviceId)
@@ -217,7 +228,7 @@
         return;
       }
     } else {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClientFornitoreServizio
         .from("extra_services")
         .insert({ title, description: desc, category, is_active: isActive, provider_id: provider.id })
         .select()
@@ -231,7 +242,9 @@
 
     const optionPayloads = collectOptions(serviceId);
     if (optionPayloads.length > 0) {
-      const { error: optError } = await supabase.from("extra_service_options").upsert(optionPayloads);
+      const { error: optError } = await supabaseClientFornitoreServizio
+        .from("extra_service_options")
+        .upsert(optionPayloads);
       if (optError) {
         messageEl.textContent = "Servizio salvato, ma alcune opzioni non sono state aggiornate: " + optError.message;
         return;

@@ -117,13 +117,16 @@
   const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
   const PHOTO_BUCKET = "property-photos";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClientAreaProprietariModifica = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
 </script>
 <script>
   function publicUrlFromPath(path) {
     if (!path) return null;
     if (path.startsWith("http")) return path;
-    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    const { data } = supabaseClientAreaProprietariModifica.storage.from(PHOTO_BUCKET).getPublicUrl(path);
     return data?.publicUrl || null;
   }
 
@@ -142,7 +145,7 @@
   }
 
   async function getCurrentUser() {
-    const { data, error } = await supabase.auth.getUser();
+    const { data, error } = await supabaseClientAreaProprietariModifica.auth.getUser();
     if (error || !data.user) {
       window.location.href = "login.html";
       return null;
@@ -223,7 +226,7 @@
   async function loadExistingPhotos(property) {
     const gallery = document.getElementById("edit-photos");
     gallery.innerHTML = "<p class=\"small-label\">Caricamento foto...</p>";
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClientAreaProprietariModifica
       .from("property_photos")
       .select("*")
       .eq("property_id", property.id)
@@ -272,7 +275,7 @@
     const msg = document.getElementById("edit-message");
     msg.textContent = "Aggiornamento della copertina...";
 
-    const { error: resetError } = await supabase
+    const { error: resetError } = await supabaseClientAreaProprietariModifica
       .from("property_photos")
       .update({ is_cover: false })
       .eq("property_id", property.id);
@@ -282,7 +285,7 @@
       return;
     }
 
-    const { error: coverError } = await supabase
+    const { error: coverError } = await supabaseClientAreaProprietariModifica
       .from("property_photos")
       .update({ is_cover: true })
       .eq("id", photoId);
@@ -292,7 +295,10 @@
       return;
     }
 
-    await supabase.from("properties").update({ cover_photo_url: photoUrl }).eq("id", property.id);
+    await supabaseClientAreaProprietariModifica
+      .from("properties")
+      .update({ cover_photo_url: photoUrl })
+      .eq("id", property.id);
     property.cover_photo_url = photoUrl;
     msg.textContent = "Copertina aggiornata.";
     loadExistingPhotos(property);
@@ -302,7 +308,9 @@
     const toDeletePath = photoPath?.startsWith("http") ? getStoragePathFromUrl(photoPath) : photoPath;
 
     if (toDeletePath) {
-      const { error: storageError } = await supabase.storage.from(PHOTO_BUCKET).remove([toDeletePath]);
+      const { error: storageError } = await supabaseClientAreaProprietariModifica.storage
+        .from(PHOTO_BUCKET)
+        .remove([toDeletePath]);
       if (storageError) {
         alert("Errore nell'eliminazione dallo storage: " + storageError.message);
         return;
@@ -310,7 +318,10 @@
     }
 
     if (photoId && photoId !== "cover") {
-      const { error: dbError } = await supabase.from("property_photos").delete().eq("id", photoId);
+      const { error: dbError } = await supabaseClientAreaProprietariModifica
+        .from("property_photos")
+        .delete()
+        .eq("id", photoId);
       if (dbError) {
         alert("Foto rimossa dallo storage ma non dal database: " + dbError.message);
       }
@@ -325,7 +336,7 @@
       return;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClientAreaProprietariModifica
       .from("properties")
       .select("*")
       .eq("id", propertyId)
@@ -366,7 +377,7 @@
     const status = document.getElementById("edit-status").value;
     const newPhotos = Array.from(document.getElementById("edit-photos-input").files || []);
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClientAreaProprietariModifica
       .from("properties")
       .update({
         title,
@@ -387,18 +398,21 @@
     if (newPhotos.length > 0) {
       let coverUrl = null;
       const failedUploads = [];
-      const { count } = await supabase
+      const { count } = await supabaseClientAreaProprietariModifica
         .from("property_photos")
         .select("id", { count: "exact", head: true })
         .eq("property_id", currentProperty.id);
       const offset = count || 0;
 
-      await supabase.from("property_photos").update({ is_cover: false }).eq("property_id", currentProperty.id);
+      await supabaseClientAreaProprietariModifica
+        .from("property_photos")
+        .update({ is_cover: false })
+        .eq("property_id", currentProperty.id);
 
       for (let i = 0; i < newPhotos.length; i++) {
         const file = newPhotos[i];
         const path = `properties/${currentProperty.id}/${Date.now()}-${i}-${file.name}`;
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseClientAreaProprietariModifica.storage
           .from(PHOTO_BUCKET)
           .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
 
@@ -407,7 +421,9 @@
           continue;
         }
 
-        const { error: insertError } = await supabase.from("property_photos").insert({
+        const { error: insertError } = await supabaseClientAreaProprietariModifica
+          .from("property_photos")
+          .insert({
           property_id: currentProperty.id,
           path,
           is_cover: i === 0,
@@ -425,7 +441,10 @@
       }
 
       if (coverUrl) {
-        await supabase.from("properties").update({ cover_photo_url: coverUrl }).eq("id", currentProperty.id);
+        await supabaseClientAreaProprietariModifica
+          .from("properties")
+          .update({ cover_photo_url: coverUrl })
+          .eq("id", currentProperty.id);
         currentProperty.cover_photo_url = coverUrl;
       }
 
