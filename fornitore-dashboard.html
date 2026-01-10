@@ -121,10 +121,18 @@
           if (svc.service_type === 'driver') icon = "🚗";
           if (svc.service_type === 'transfer') icon = "🚐";
 
+          let thumbnail = "";
+          if (svc.gallery_urls && svc.gallery_urls.length > 0) {
+            thumbnail = `<div class="card-image-cover">
+                            <img src="${svc.gallery_urls[0]}" alt="${svc.title}" />
+                          </div>`;
+          }
+
           return `
           <div class="card service-card lift-on-hover scale-on-active" style="display:flex; flex-direction:column;">
-            <div class="card-header-row" style="align-items:flex-start;">
-              <div style="font-size:24px; margin-right:12px;">${icon}</div>
+            ${thumbnail}
+            <div class="card-header-row" style="align-items:flex-start; margin-bottom: 0;">
+              ${!thumbnail ? `<div style="font-size:24px; margin-right:12px;">${icon}</div>` : ''}
               <div>
                 <p class="eyebrow" style="margin-bottom:4px;">${svc.service_type ? svc.service_type.toUpperCase() : "SERVIZIO"}</p>
                 <h3 style="margin-bottom:4px;">${svc.title}</h3>
@@ -147,18 +155,79 @@
 
     async function loadServices() {
       if (!provider) return;
-      servicesEl.innerHTML = "<p>Caricamento servizi...</p>";
+      servicesEl.innerHTML = "<p>Caricamento profilo...</p>";
+
+      // Fetch only ONE service (the most recent one or single active)
       const { data, error } = await supabaseClient
         .from("extra_services")
-        .select("id,title,description,category,is_active, extra_service_options(id,is_active)")
+        .select("id,title,description,category,service_type,is_active,gallery_urls")
         .eq("provider_id", provider.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
       if (error) {
-        servicesEl.innerHTML = "<p>Errore nel caricamento dei servizi.</p>";
+        servicesEl.innerHTML = "<p>Errore nel caricamento del profilo.</p>";
         return;
       }
-      services = data || [];
-      renderServices(services);
+
+      const existingService = data;
+
+      // Update Dashboard Hero & Actions
+      const actionContainer = document.querySelector('.dashboard-actions');
+
+      if (!existingService) {
+        // Case 0: No service -> Show "Create" CTA
+        servicesNote.innerHTML = `
+              <div style="text-align:center; padding: 40px; background:#f9fafb; border-radius:12px; border:2px dashed #e5e7eb;">
+                  <h3>Non hai ancora creato il tuo profilo servizio</h3>
+                  <p style="color:var(--text-muted); margin-bottom:24px;">Crea il tuo profilo per iniziare a ricevere richieste dagli ospiti.</p>
+                  <a href="fornitore-servizio.html" class="btn btn-primary">Crea Profilo Servizio</a>
+              </div>
+          `;
+        servicesEl.innerHTML = ""; // Clear grid
+        if (actionContainer) actionContainer.innerHTML = ''; // Clear top button to avoid duplication
+      } else {
+        // Case 1: Service exists -> Show Card + Hide "Create" button
+        if (actionContainer) actionContainer.innerHTML = ''; // Hide "Add New" button
+
+        servicesNote.textContent = "";
+
+        // Render Single Card
+        let thumb = "";
+        if (existingService.gallery_urls && existingService.gallery_urls.length > 0) {
+          thumb = `<div class="card-image-cover">
+                        <img src="${existingService.gallery_urls[0]}" alt="${existingService.title}" />
+                      </div>`;
+        }
+
+        let icon = "📋";
+        const type = existingService.service_type || "guide";
+        if (type === 'guide') icon = "🗺️";
+        if (type === 'chef') icon = "🍳";
+        if (type === 'driver') icon = "🚗";
+        if (type === 'transfer') icon = "🚐";
+
+        servicesEl.innerHTML = `
+             <div class="card service-card" style="max-width: 600px; margin: 0 auto; display:flex; flex-direction:column;">
+                ${thumb}
+                <div class="card-header-row" style="align-items:flex-start;">
+                    ${!thumb ? `<div style="font-size:24px; margin-right:12px;">${icon}</div>` : ''}
+                    <div>
+                        <p class="eyebrow">${existingService.category || type.toUpperCase()}</p>
+                        <h3>${existingService.title}</h3>
+                        <span class="badge ${existingService.is_active ? "badge-strong" : "badge-muted"}">
+                          ${existingService.is_active ? "Pubblicato" : "Bozza / Nascosto"}
+                        </span>
+                    </div>
+                </div>
+                <p style="margin-top:12px; color:var(--text-muted);">${existingService.description || ""}</p>
+                <div class="card-actions" style="margin-top:24px; border-top:1px solid #eee; padding-top:16px;">
+                    <a href="fornitore-servizio.html?service_id=${existingService.id}" class="btn btn-primary btn-full">Modifica Profilo & Opzioni</a>
+                </div>
+             </div>
+          `;
+      }
     }
 
     async function init() {

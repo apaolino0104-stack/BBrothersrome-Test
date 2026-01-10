@@ -73,10 +73,24 @@
                 placeholder="Descrivi chi sei e la tua esperienza..." oninput="updatePreview()"></textarea>
             </div>
 
-            <div class="form-group" style="margin-top:16px;">
-              <label>Lingue Parlate / Dettagli Extra</label>
-              <input type="text" id="svc-extra-text" class="form-input" placeholder="Es. Italiano, Inglese, Spagnolo"
-                oninput="updatePreview()" />
+            <!-- Removed Extra Section -->
+
+            <!-- Photos Section -->
+            <div class="form-group" style="margin-top:24px;">
+              <label>Galleria Fotografica</label>
+              <div class="upload-area"
+                style="border: 2px dashed #e5e5e5; padding: 24px; text-align: center; border-radius: 12px; background: #fcfcfc; cursor: pointer;">
+                <input type="file" id="svc-photos" multiple accept="image/*" style="display:none;"
+                  onchange="handleFileSelect(this)">
+                <div onclick="document.getElementById('svc-photos').click()">
+                  <span style="font-size:24px; display:block; margin-bottom:8px;">📷</span>
+                  <span style="font-size:14px; color:var(--gold); font-weight:600;">Clicca per caricare foto</span>
+                  <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">o trascina qui le immagini (Max 5)
+                  </p>
+                </div>
+                <div id="preview-thumbs"
+                  style="display:flex; gap:8px; margin-top:16px; justify-content:center; flex-wrap:wrap;"></div>
+              </div>
             </div>
           </div>
 
@@ -86,11 +100,71 @@
             <div id="dynamic-content">
               <!-- Content injected by JS -->
             </div>
+            <!-- OPTION MANAGEMENT SECTION (NEW) -->
+            <div class="form-section border-l-gold" style="margin-top: 32px;" id="options-section">
+              <h2 style="font-size:20px; margin-bottom:16px;">Opzioni di Vendita</h2>
+              <p style="color:var(--text-muted); font-size:14px; margin-bottom:24px;">
+                Aggiungi le diverse varianti del tuo servizio (es. "Tour Mattina", "Tour Pomeriggio") con i relativi
+                prezzi.
+              </p>
+
+              <!-- Options List -->
+              <div id="options-list" style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
+                <!-- Injected by JS -->
+              </div>
+
+              <!-- Add Option Form -->
+              <div style="background:#f9fafb; padding:20px; border-radius:12px; border:1px solid #e5e7eb;">
+                <h3 style="font-size:16px; margin-bottom:16px;">Aggiungi Nuova Opzione</h3>
+                <div id="dynamic-option-form">
+                  <!-- Injected by updateOptionForm() -->
+                </div>
+
+                <div style="text-align:right; margin-top:16px;">
+                  <button class="btn btn-dark" onclick="addOption()">+ Aggiungi Opzione</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- CONTACTS SECTION (NEW) -->
+          <div class="form-section" style="margin-top: 32px;" id="contacts-section">
+            <h2 style="font-size:20px; margin-bottom:16px;">Contatti & Prenotazioni</h2>
+            <div class="two-cols" style="margin-bottom:16px;">
+              <div class="form-group">
+                <label>Numero per WhatsApp</label>
+                <div style="position:relative;">
+                  <span style="position:absolute; left:12px; top:12px; opacity:0.6;">📱</span>
+                  <input type="tel" id="prov-phone" class="form-input" style="padding-left:40px;"
+                    placeholder="+39 333 1234567" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Email Prenotazioni</label>
+                <div style="position:relative;">
+                  <span style="position:absolute; left:12px; top:12px; opacity:0.6;">✉️</span>
+                  <input type="email" id="prov-email" class="form-input" style="padding-left:40px;"
+                    placeholder="prenotazioni@email.com" />
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Sito web o Profilo Social (Opzionale)</label>
+              <div style="position:relative;">
+                <span style="position:absolute; left:12px; top:12px; opacity:0.6;">🌐</span>
+                <input type="url" id="prov-website" class="form-input" style="padding-left:40px;"
+                  placeholder="https://..." />
+              </div>
+            </div>
           </div>
 
           <!-- SAVE ACTIONS -->
           <div style="text-align:right;">
             <span id="save-msg" style="margin-right:12px; font-size:14px; color:var(--text-muted)"></span>
+            <button class="btn btn-ghost"
+              style="color:#dc2626; border:1px solid #dc2626; margin-right:12px; display:none;" id="btn-delete-ui"
+              onclick="deleteService()">Elimina Servizio</button>
             <button class="btn btn-primary" onclick="saveService()">Salva e Pubblica Profilo</button>
           </div>
 
@@ -105,30 +179,30 @@
               <span class="badge badge-strong" style="background:#dcfce7; color:#166534;">Live View</span>
             </div>
 
-            <div class="live-preview-card">
+            <div class="live-preview-card" style="overflow:hidden;">
               <div class="preview-image-placeholder">
                 <span style="opacity:0.3; font-size:48px;">📷</span>
                 <div class="preview-tag" id="prev-type">GUIDE</div>
               </div>
               <div class="preview-body">
-                <div class="preview-meta">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
                   <div>
-                    <h3 style="font-size:18px; margin:0;" id="prev-title">Titolo Servizio</h3>
-                    <p style="font-size:12px; color:var(--text-muted); margin:0;" id="prev-tagline">Tagline...</p>
+                    <p class="eyebrow" id="prev-eyebrow"
+                      style="margin-bottom:4px; font-size:11px; letter-spacing:1px; color:#9ca3af; text-transform:uppercase; font-weight:700;">
+                      GUIDA TURISTICA</p>
+                    <h3 style="font-size:18px; margin:0; line-height:1.3;" id="prev-title">Titolo Servizio</h3>
                   </div>
-                  <div class="preview-rating">5.0 ★</div>
+                  <span class="badge badge-strong" id="prev-provider">Partner</span>
                 </div>
 
-                <p style="font-size:13px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;" id="prev-desc">
+                <p style="font-size:13px; color:var(--text-muted); line-height:1.5; margin-bottom:24px;" id="prev-desc">
                   La descrizione del tuo servizio apparirà qui...
                 </p>
 
-                <div class="preview-tags-row" id="prev-extras">
-                  <!-- Dynamic tags -->
+                <div style="margin-top:auto;">
+                  <button class="btn btn-outline-sm btn-full" disabled style="opacity:0.7; cursor:not-allowed;">Vedi
+                    Dettagli & Contatti</button>
                 </div>
-
-                <button class="btn btn-dark btn-full"
-                  style="font-size:13px; background:var(--dark); color:var(--white);">Contatta</button>
               </div>
             </div>
 
@@ -152,12 +226,16 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    const STORAGE_BUCKET = "service-images"; // Ensure this bucket exists in Supabase
+
     let state = {
       currentUser: null,
       provider: null,
       serviceId: new URLSearchParams(window.location.search).get("service_id"),
       type: 'guide', // default
-      details: {}
+      details: {},
+      filesToUpload: [],
+      existingGallery: []
     };
 
     // UI ELEMENTS
@@ -171,7 +249,6 @@
       title: document.getElementById('svc-title'),
       tagline: document.getElementById('svc-tagline'),
       desc: document.getElementById('svc-desc'),
-      extra: document.getElementById('svc-extra-text'),
 
       // Preview
       pTitle: document.getElementById('prev-title'),
@@ -183,93 +260,343 @@
 
     function setServiceType(type) {
       state.type = type;
-
-      // Update UI Cards
-      els.typeCards.forEach(card => {
-        if (card.dataset.type === type) card.classList.add('active');
-        else card.classList.remove('active');
+      // Update UI selection
+      els.typeCards.forEach(c => {
+        if (c.dataset.type === type) {
+          c.classList.add('active');
+          c.style.borderColor = 'var(--gold)';
+          c.style.background = '#fcfcfc';
+        } else {
+          c.classList.remove('active');
+          c.style.borderColor = '#e5e5e5';
+          c.style.background = 'white';
+        }
       });
-
       updateDynamicSection();
+      updateOptionForm();
       updatePreview();
     }
 
+    function updateOptionForm() {
+      const container = document.getElementById('dynamic-option-form');
+      if (!container) return;
+
+      let html = '';
+      if (state.type === 'guide') {
+        html = `
+            <div class="two-cols">
+               <div class="form-group">
+                  <label>Nome del Tour</label>
+                  <input type="text" id="opt-name" class="form-input" placeholder="Es. Tour Colosseo al Tramonto">
+               </div>
+               <div class="form-group">
+                   <label>Durata</label>
+                   <input type="text" id="opt-detail-duration" class="form-input" placeholder="Es. 3 ore">
+               </div>
+            </div>
+            <div class="two-cols">
+               <div class="form-group">
+                  <label>Prezzo a Persona (€)</label>
+                  <input type="number" id="opt-price" class="form-input" placeholder="0.00">
+               </div>
+               <div class="form-group">
+                   <label>Difficoltà</label>
+                   <select id="opt-detail-difficulty" class="form-select">
+                      <option value="Facile">Facile</option>
+                      <option value="Media">Media</option>
+                      <option value="Alta">Alta</option>
+                   </select>
+               </div>
+            </div>
+            <div class="form-group">
+               <label>Itinerario / Descrizione</label>
+               <textarea id="opt-desc" class="form-textarea" rows="2" placeholder="Descrivi cosa include questo tour..."></textarea>
+            </div>
+         `;
+      } else if (state.type === 'chef') {
+        html = `
+            <div class="two-cols">
+               <div class="form-group">
+                  <label>Nome del Menu</label>
+                  <input type="text" id="opt-name" class="form-input" placeholder="Es. Cena di Pesce Romantica">
+               </div>
+               <div class="form-group">
+                  <label>Prezzo (€)</label>
+                  <input type="number" id="opt-price" class="form-input" placeholder="0.00">
+               </div>
+            </div>
+            <div class="form-group">
+                <label>Tipo di Prezzo</label>
+                <select id="opt-detail-pricetype" class="form-select">
+                   <option value="A Persona">Prezzo a Persona</option>
+                   <option value="Complessivo">Prezzo Complessivo (Evento)</option>
+                </select>
+            </div>
+            <div class="form-group">
+               <label>Servizi Inclusi in questo menu</label>
+               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px;">
+                   <label class="flex items-center gap-2"><input type="checkbox" class="opt-detail-inc" value="Vini"> Vini Inclusi</label>
+                   <label class="flex items-center gap-2"><input type="checkbox" class="opt-detail-inc" value="Dolce"> Dolce Incluso</label>
+                   <label class="flex items-center gap-2"><input type="checkbox" class="opt-detail-inc" value="Servizio Tavolo"> Servizio al Tavolo</label>
+                   <label class="flex items-center gap-2"><input type="checkbox" class="opt-detail-inc" value="Pulizia"> Pulizia Finale</label>
+               </div>
+            </div>
+            <div class="form-group">
+               <label>Descrizione Menu</label>
+               <textarea id="opt-desc" class="form-textarea" rows="2" placeholder="Elenca le portate principali..."></textarea>
+            </div>
+         `;
+      } else if (state.type === 'driver' || state.type === 'transfer') {
+        html = `
+            <div class="two-cols">
+               <div class="form-group">
+                  <label>Service / Route Name</label>
+                  <input type="text" id="opt-name" class="form-input" placeholder="Es. Transfer Aeroporto FCO - Centro">
+               </div>
+               <div class="form-group">
+                  <label>Veicolo</label>
+                  <input type="text" id="opt-detail-vehicle" class="form-input" placeholder="Es. Mercedes Classe E">
+               </div>
+            </div>
+            <div class="two-cols">
+               <div class="form-group">
+                   <label>Capacità Persone (Max Pax)</label>
+                   <input type="text" id="opt-detail-pax" class="form-input" placeholder="Es. 4">
+               </div>
+               ${state.type === 'transfer' ? `
+               <div class="form-group">
+                   <label>Capacità Bagagli</label>
+                   <input type="text" id="opt-detail-luggage" class="form-input" placeholder="Es. 2 Grandi + 2 Piccoli">
+               </div>` : ''}
+            </div>
+            <div class="two-cols">
+               <div class="form-group">
+                  <label>Tipo Tariffa</label>
+                  <select id="opt-detail-ratetype" class="form-select">
+                     <option value="Tratta Fissa">Tratta Fissa</option>
+                     <option value="Oraria">Oraria</option>
+                  </select>
+               </div>
+               <div class="form-group">
+                  <label>Prezzo / Tariffa (€)</label>
+                  <input type="number" id="opt-price" class="form-input" placeholder="0.00">
+               </div>
+            </div>
+            <div class="form-group">
+               <label>Note (es. Max Km, Notturno, etc.)</label>
+               <input type="text" id="opt-desc" class="form-input" placeholder="Note aggiuntive...">
+            </div>
+         `;
+      }
+      container.innerHTML = html;
+    }
     function updateDynamicSection() {
       let html = '';
       if (state.type === 'guide') {
-        els.dynamicTitle.textContent = "Dettagli Tour & Esperienze";
+        els.dynamicTitle.textContent = "Profilo Guida";
         html = `
              <div class="form-group">
-                <label>Cosa include il tour? (es. Biglietti, Auricolari)</label>
-                <input type="text" class="form-input" placeholder="Elenco breve..." id="dyn-guide-inc" oninput="updatePreview()">
+                <label>Presentazione (Bio & Esperienza)</label>
+                <textarea class="form-textarea" rows="4" id="dyn-guide-bio" placeholder="Racconta chi sei, la tua esperienza e cosa offri in generale..."></textarea>
              </div>
-             <p style="font-size:12px; color:gray;">Nota: Potrai aggiungere i singoli tour specifici dopo aver salvato il profilo.</p>
-          `;
+             
+             <div class="form-group">
+                <label>Lingue Parlate</label>
+                <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:8px;">
+                   <label class="flex items-center gap-2"><input type="checkbox" class="dyn-guide-lang" value="Italiano"> Italiano</label>
+                   <label class="flex items-center gap-2"><input type="checkbox" class="dyn-guide-lang" value="Inglese"> Inglese</label>
+                   <label class="flex items-center gap-2"><input type="checkbox" class="dyn-guide-lang" value="Spagnolo"> Spagnolo</label>
+                   <label class="flex items-center gap-2"><input type="checkbox" class="dyn-guide-lang" value="Tedesco"> Tedesco</label>
+                </div>
+                <input type="text" id="dyn-guide-lang-custom" class="form-input" placeholder="Altra lingua (opzionale)">
+             </div>
+
+             <div class="form-group">
+                <label>Giorni di Disponibilità (Abituale)</label>
+                <input type="text" id="dyn-guide-avail" class="form-input" placeholder="Es. Tutti i giorni, Solo Weekend (Lascia vuoto per 'Su Richiesta')">
+             </div>
+
+             <p class="text-xs text-gray-500 mt-2">I singoli tour specifici (es. "Tour Colosseo", "Tour Vaticano") li aggiungerai nella sezione "Opzioni di Vendita" qui sotto.</p>
+        `;
       } else if (state.type === 'chef') {
-        els.dynamicTitle.textContent = "Cucina & Menù";
-        html = `
-             <div class="two-cols">
-                <div class="form-group">
-                   <label>Stile Cucina</label>
-                   <select class="form-select" id="dyn-chef-style" onchange="updatePreview()">
-                      <option value="Tradizionale">Tradizionale</option>
-                      <option value="Gourmet">Gourmet</option>
-                      <option value="Pesce">Pesce</option>
-                   </select>
-                </div>
-                <div class="form-group">
-                   <label>Prezzo Medio</label>
-                   <select class="form-select">
-                      <option>€30 - €50</option>
-                      <option>€50 - €80</option>
-                      <option>€80+</option>
-                   </select>
-                </div>
-             </div>
-          `;
-      } else if (state.type === 'driver' || state.type === 'transfer') {
-        els.dynamicTitle.textContent = "Flotta & Veicoli";
+        els.dynamicTitle.textContent = "Profilo Chef";
         html = `
              <div class="form-group">
-                <label>Veicolo Principale</label>
-                <select class="form-select" id="dyn-driver-car" onchange="updatePreview()">
-                   <option value="Berlina Lusso">Berlina Lusso (Mercedes E)</option>
-                   <option value="Van 8 Posti">Van 8 Posti</option>
-                   <option value="Bus">Bus GT</option>
+                <label>Stile di Cucina Principale</label>
+                <select class="form-select" id="dyn-chef-style" onchange="updatePreview()">
+                   <option value="Tradizionale Locale">Tradizionale Locale</option>
+                   <option value="Gourmet / Moderno">Gourmet / Moderno</option>
+                   <option value="Pesce & Frutti di Mare">Pesce & Frutti di Mare</option>
+                   <option value="Vegetariano / Vegano">Vegetariano / Vegano</option>
+                   <option value="Etnico / Sushi">Etnico / Sushi</option>
+                   <option value="Altro">Altro (Specifica sotto)</option>
                 </select>
+                <input type="text" id="dyn-chef-style-custom" class="form-input" style="margin-top:8px; display:none;" placeholder="Specifica il tuo stile...">
              </div>
-          `;
+          <p class="text-xs text-gray-500 mt-2">I menu specifici (es. "Cena Romantica", "Degustazione Vini") li aggiungerai nella sezione "Opzioni di Vendita".</p>
+        `;
+      } else if (state.type === 'driver' || state.type === 'transfer') {
+        els.dynamicTitle.textContent = "Flotta & Veicolo Principale";
+        html = `
+             <div class="form-group">
+                <label>Descrizione Flotta (Opzionale)</label>
+                <textarea class="form-textarea" rows="3" id="dyn-driver-desc" placeholder="Descrivi brevemente la qualità della tua flotta..."></textarea>
+             </div>
+          <p class="text-xs text-gray-500 mt-2">I dettagli specifici (Veicolo, Bagagli, Pax) li imposterai per ogni singola opzione di vendita.</p>
+        `;
       }
       els.dynamicSection.innerHTML = html;
     }
 
     function updatePreview() {
-      els.pTitle.textContent = els.title.value || "Titolo Servizio";
-      els.pTagline.textContent = els.tagline.value || "Tua tagline qui...";
-      els.pDesc.textContent = els.desc.value || "Descrizione...";
+      // 1. Title -> Comes from Tagline (Titolo Breve) input
+      els.pTitle.textContent = els.tagline.value || "Titolo Servizio";
 
-      // Update Type Badge
-      els.pType.textContent = state.type.toUpperCase();
-
-      // Extras Icons
-      let extraHtml = '';
-
-      // Common extra text
-      if (els.extra.value) {
-        extraHtml += `<span class="mini-tag">🗣️ ${els.extra.value}</span>`;
+      // 2. Eyebrow (Category/Type)
+      const eyebrowEl = document.getElementById('prev-eyebrow');
+      if (eyebrowEl) {
+        eyebrowEl.textContent = state.type ? state.type.toUpperCase() : "CATEGORIA";
       }
 
-      // Dynamic Specifics
-      if (state.type === 'chef') {
-        const style = document.getElementById('dyn-chef-style')?.value;
-        if (style) extraHtml += `<span class="mini-tag">🍽️ ${style}</span>`;
-      }
-      if (state.type === 'driver') {
-        const car = document.getElementById('dyn-driver-car')?.value;
-        if (car) extraHtml += `<span class="mini-tag">🚘 ${car}</span>`;
+      // 3. Provider Name -> Comes from Title (Nome Completo) input
+      const providerEl = document.getElementById('prev-provider');
+      if (providerEl) {
+        // Use input value, fallback to stored provider name, then generic
+        providerEl.textContent = els.title.value || state.provider?.name || "Partner Verificato";
       }
 
-      els.pExtras.innerHTML = extraHtml;
+      // 3. Description
+      // Show snippet of desc? Original card shows full desc or truncated. 
+      // Input is textarea, card is p.
+      els.pDesc.textContent = els.desc.value || "Descrizione del servizio...";
+
+      // 4. Updates for image tag if needed
+      const prevTypeTag = document.getElementById('prev-type');
+      if (prevTypeTag) prevTypeTag.textContent = state.type.toUpperCase();
+    }
+
+    // OPTION MANAGEMENT LOGIC
+    let serviceOptions = [];
+    const optionsListEl = document.getElementById('options-list');
+
+    async function fetchOptions(serviceId) {
+      const { data, error } = await supabaseClient
+        .from('extra_service_options')
+        .select('*')
+        .eq('service_id', serviceId)
+        .eq('is_active', true)
+        .order('price_cents', { ascending: true });
+
+      if (data) {
+        serviceOptions = data;
+        renderOptions();
+      }
+    }
+
+    function renderOptions() {
+      if (!serviceOptions.length) {
+        optionsListEl.innerHTML = '<p style="font-size:13px; color:var(--text-muted); font-style:italic;">Nessuna opzione aggiunta.</p>';
+        return;
+      }
+
+      optionsListEl.innerHTML = serviceOptions.map(opt => `
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:12px; border-radius:8px; border:1px solid #eee;">
+             <div>
+                <div style="font-weight:600; font-size:15px;">
+                   ${opt.name}
+                   <span style="font-weight:400; color:var(--text-muted); font-size:13px; margin-left:8px;">
+                      (${opt.available_days || 'Giorni su richiesta'})
+                   </span>
+                </div>
+                <div style="font-size:13px; color:var(--text-muted);">${opt.description || ''}</div>
+                ${opt.details?.vehicle || opt.details?.pax ? `
+                <div style="font-size:12px; color:var(--text); margin-top:4px; font-weight:500;">
+                   ${[opt.details.vehicle, (opt.details.pax ? 'Pax: ' + opt.details.pax : ''), (opt.details.luggage ? 'Bagagli: ' + opt.details.luggage : '')].filter(Boolean).join(' • ')}
+                </div>` : ''}
+             </div>
+             <div style="text-align:right;">
+                <div style="font-weight:700; color:var(--gold);">€ ${(opt.price_cents / 100).toFixed(2)}${opt.details?.rate_type === 'A Persona' ? ' / pers' : (opt.details?.rate_type === 'Complessivo' ? ' (Tot)' : '')}</div>
+                <button class="btn btn-ghost btn-sm" style="color:#ef4444; padding:4px 8px; font-size:12px;" onclick="deleteOption('${opt.id}')">Elimina</button>
+             </div>
+          </div>
+          `).join('');
+    }
+
+    async function addOption() {
+      if (!state.serviceId) {
+        alert("Salva prima il servizio principale per aggiungere le opzioni.");
+        return;
+      }
+
+      const name = document.getElementById('opt-name').value;
+      const priceVal = document.getElementById('opt-price').value;
+      const desc = document.getElementById('opt-desc')?.value || '';
+
+      if (!name || !priceVal) {
+        alert("Inserisci almeno Nome e Prezzo.");
+        return;
+      }
+
+      // Capture Dynamic Details
+      let optionDetails = {};
+      if (state.type === 'guide') {
+        optionDetails.duration = document.getElementById('opt-detail-duration')?.value;
+        optionDetails.difficulty = document.getElementById('opt-detail-difficulty')?.value;
+      } else if (state.type === 'chef') {
+        const checkedInc = Array.from(document.querySelectorAll('.opt-detail-inc:checked')).map(cb => cb.value);
+        optionDetails.included_services = checkedInc;
+        optionDetails.rate_type = document.getElementById('opt-detail-pricetype')?.value;
+      } else if (state.type === 'driver' || state.type === 'transfer') {
+        optionDetails.rate_type = document.getElementById('opt-detail-ratetype')?.value;
+        optionDetails.vehicle = document.getElementById('opt-detail-vehicle')?.value;
+        optionDetails.pax = document.getElementById('opt-detail-pax')?.value;
+        optionDetails.luggage = document.getElementById('opt-detail-luggage')?.value;
+      }
+
+      const priceCents = Math.round(parseFloat(priceVal) * 100);
+
+      const { data, error } = await supabaseClient
+        .from('extra_service_options')
+        .insert({
+          service_id: state.serviceId,
+          name: name,
+          price_cents: priceCents,
+          description: desc,
+          details: optionDetails, // Save dynamic details
+          is_active: true
+        })
+        .select();
+
+      if (error) {
+        alert("Errore salvataggio opzione: " + error.message);
+      } else {
+        // Clear inputs
+        document.getElementById('opt-name').value = '';
+        document.getElementById('opt-price').value = '';
+        if (document.getElementById('opt-desc')) document.getElementById('opt-desc').value = '';
+
+        // Clear dynamic
+        if (document.getElementById('opt-detail-duration')) document.getElementById('opt-detail-duration').value = '';
+        document.querySelectorAll('.opt-detail-inc').forEach(cb => cb.checked = false);
+
+        // Refresh list
+        fetchOptions(state.serviceId);
+      }
+    }
+
+    async function deleteOption(optId) {
+      if (!confirm("Sei sicuro di voler eliminare questa opzione?")) return;
+
+      const { error } = await supabaseClient
+        .from('extra_service_options')
+        .update({ is_active: false }) // Soft delete
+        .eq('id', optId);
+
+      if (error) {
+        alert("Errore eliminazione: " + error.message);
+      } else {
+        fetchOptions(state.serviceId);
+      }
     }
 
     async function init() {
@@ -286,44 +613,196 @@
       if (state.serviceId) {
         const { data: svc } = await supabaseClient.from("extra_services").select("*").eq("id", state.serviceId).single();
         if (svc) {
-          state.type = svc.service_type || 'guide';
-          els.title.value = svc.title || '';
-          els.tagline.value = (state.provider.tagline) || ''; // currently tagging stored on provider? Or service?
-          // Let's assume we copy data to inputs
+          // Fallback to category if service_type is missing
+          state.type = svc.service_type || svc.category || 'guide';
+
+          // INPUT MAPPING:
+          // svc-title (Nome Completo) -> Provider Name
+          // svc-tagline (Titolo Breve) -> Service Title
+
+          els.title.value = state.provider.name || '';
+          els.tagline.value = svc.title || '';
           els.desc.value = svc.description || '';
+
+          // Fill Contact Inputs (From Provider Data)
+          document.getElementById('prov-phone').value = state.provider.phone || '';
+          document.getElementById('prov-email').value = state.provider.email || '';
+          document.getElementById('prov-website').value = state.provider.website || '';
+
+          // Removed extra_info population
+
+          if (svc.gallery_urls && Array.isArray(svc.gallery_urls)) {
+            state.existingGallery = svc.gallery_urls;
+            renderGalleryPreview(); // Render existing images
+          }
+
           setServiceType(state.type);
+
+          // POPULATE DYNAMIC INPUTS
+          setTimeout(() => {
+            if (svc.details) {
+              if (state.type === 'guide') {
+                if (svc.details.bio) document.getElementById('dyn-guide-bio').value = svc.details.bio;
+                if (svc.details.availability) document.getElementById('dyn-guide-avail').value = svc.details.availability;
+                // Languages
+                if (svc.details.languages && Array.isArray(svc.details.languages)) {
+                  let known = ['Italiano', 'Inglese', 'Spagnolo', 'Tedesco'];
+                  let others = [];
+                  svc.details.languages.forEach(l => {
+                    if (known.includes(l)) {
+                      const cb = document.querySelector(`.dyn - guide - lang[value = "${l}"]`);
+                      if (cb) cb.checked = true;
+                    } else {
+                      others.push(l);
+                    }
+                  });
+                  if (others.length > 0) document.getElementById('dyn-guide-lang-custom').value = others.join(', ');
+                }
+              }
+              if (state.type === 'chef') {
+                // Only Style remaining
+                if (svc.details.chef_style) {
+                  const knownStyles = ['Tradizionale Locale', 'Gourmet / Moderno', 'Pesce & Frutti di Mare', 'Vegetariano / Vegano', 'Etnico / Sushi'];
+                  const styleInput = document.getElementById('dyn-chef-style');
+                  const customInput = document.getElementById('dyn-chef-style-custom');
+
+                  if (knownStyles.includes(svc.details.chef_style)) {
+                    styleInput.value = svc.details.chef_style;
+                    customInput.style.display = 'none';
+                  } else {
+                    styleInput.value = 'Altro';
+                    customInput.value = svc.details.chef_style;
+                    customInput.style.display = 'block';
+                  }
+                }
+              }
+              if (state.type === 'driver' || state.type === 'transfer') {
+                if (svc.details.driver_desc) document.getElementById('dyn-driver-desc').value = svc.details.driver_desc;
+              }
+              updatePreview();
+            }
+          }, 50);
+
           // Trigger update
           updatePreview();
+          updateOptionForm();  // Ensure it's called after timeouts? No, setServiceType called it safely.
+
+          // FETCH OPTIONS
+          fetchOptions(state.serviceId);
+
+          // Show Delete Button
+          const delBtn = document.getElementById('btn-delete-ui');
+          if (delBtn) delBtn.style.display = 'inline-block';
         }
       } else {
         setServiceType('guide'); // init default
+        // Fill Contact Inputs for new service too (From Provider Data)
+        document.getElementById('prov-phone').value = state.provider.phone || '';
+        document.getElementById('prov-email').value = state.provider.email || '';
+        document.getElementById('prov-website').value = state.provider.website || '';
+
+        // Hide options section for new service until saved
+        document.getElementById('options-section').style.display = 'none';
       }
 
-      // Show preview (desktop)
-      if (window.innerWidth > 900) els.previewCol.style.display = 'block';
+      // Show preview (Always show, handled by CSS for mobile stacking)
+      els.previewCol.style.display = 'block';
+    }
+
+    async function uploadImages(files) {
+      const uploadPromises = files.map(async (file) => {
+        // Unique name: providerID_timestamp_filename
+        const fileName = `${state.provider.id}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+
+        const { data, error } = await supabaseClient.storage
+          .from(STORAGE_BUCKET)
+          .upload(fileName, file);
+
+        if (error) {
+          console.error("Upload Error:", error);
+          return null;
+        }
+
+        // Get Public URL
+        const { data: publicData } = supabaseClient.storage.from(STORAGE_BUCKET).getPublicUrl(fileName);
+        return publicData.publicUrl;
+      });
+
+      const results = await Promise.all(uploadPromises);
+      return results.filter(url => url !== null);
     }
 
     async function saveService() {
       const btn = document.querySelector('button.btn-primary');
       const msg = document.getElementById('save-msg');
       btn.disabled = true;
-      msg.textContent = "Salvataggio...";
+      msg.textContent = "Caricamento immagini...";
+
+      // Upload New Images
+      let newImageUrls = [];
+      if (state.filesToUpload.length > 0) {
+        newImageUrls = await uploadImages(state.filesToUpload);
+        if (newImageUrls.length === 0 && state.filesToUpload.length > 0) {
+          // If uploads failed significantly
+          msg.textContent = "Errore nel caricamento delle immagini. Controlla la connessione o il bucket.";
+          // Proceed or stop? Let's proceed but warn.
+        }
+      }
+
+      // Combine with Existing (Assuming we keep all existing for now unless clear logic added)
+      const finalGallery = [...state.existingGallery, ...newImageUrls];
+
+      msg.textContent = "Salvataggio dati...";
+
+      let dynamicDetails = {};
+
+      if (state.type === 'guide') {
+        dynamicDetails.bio = document.getElementById('dyn-guide-bio')?.value || '';
+        // Languages
+        const langs = Array.from(document.querySelectorAll('.dyn-guide-lang:checked')).map(cb => cb.value);
+        const customLang = document.getElementById('dyn-guide-lang-custom')?.value;
+        if (customLang) langs.push(customLang);
+        dynamicDetails.languages = langs;
+        // Availability
+        dynamicDetails.availability = document.getElementById('dyn-guide-avail')?.value || 'Su Richiesta';
+      } else if (state.type === 'chef') {
+        const styleSel = document.getElementById('dyn-chef-style')?.value;
+        const styleCust = document.getElementById('dyn-chef-style-custom')?.value;
+        dynamicDetails.chef_style = (styleSel === 'Altro' && styleCust) ? styleCust : styleSel;
+      } else if (state.type === 'driver' || state.type === 'transfer') {
+        dynamicDetails.driver_desc = document.getElementById('dyn-driver-desc')?.value || '';
+      }
 
       const payload = {
         provider_id: state.provider.id,
-        title: els.title.value,
+        title: els.tagline.value, // MAPPED TO TAGLINE INPUT
         description: els.desc.value,
         service_type: state.type,
+        category: state.type,
         is_active: true,
-        // We also update provider tagline if changed?
-        // For now let's just save service fields
-        details: {
-          tagline: els.tagline.value,
-          extra_info: els.extra.value
-        }
+        gallery_urls: finalGallery, // Save Array of URLs
+        details: dynamicDetails
       };
 
       let error = null;
+
+      // 1. Update Provider Name & Contacts
+      const { error: provError } = await supabaseClient
+        .from('providers')
+        .update({
+          name: els.title.value,
+          phone: document.getElementById('prov-phone').value,
+          email: document.getElementById('prov-email').value,
+          website: document.getElementById('prov-website').value
+        })
+        .eq('id', state.provider.id);
+
+      if (provError) {
+        console.error("Provider Name Update Error:", provError);
+        // Continue anyway? Or stop? Let's log and continue but warn if needed.
+      }
+
+      // 2. Save Service
       if (state.serviceId) {
         const res = await supabaseClient.from("extra_services").update(payload).eq("id", state.serviceId);
         error = res.error;
@@ -338,6 +817,143 @@
       } else {
         msg.textContent = "Salvato con successo!";
         setTimeout(() => window.location.href = "fornitore-dashboard.html?saved=1", 1000);
+      }
+    }
+
+    async function deleteService() {
+      if (!state.serviceId) return;
+
+      if (!confirm("Sei sicuro di voler ELIMINARE definitivamente questo servizio? L'operazione non è reversibile.")) {
+        return;
+      }
+
+      const btn = document.getElementById('btn-delete');
+      if (btn) btn.disabled = true;
+
+      // 1. Delete Options first (just to be safe against foreign key constraints if no cascade)
+      await supabaseClient.from('extra_service_options').delete().eq('service_id', state.serviceId);
+
+      // 2. Delete Service
+      const { error } = await supabaseClient.from('extra_services').delete().eq('id', state.serviceId);
+
+      if (error) {
+        alert("Errore eliminazione: " + error.message);
+        if (btn) btn.disabled = false;
+      } else {
+        alert("Servizio eliminato correttamente.");
+        window.location.href = "fornitore-dashboard.html";
+      }
+    }
+
+    function handleFileSelect(input) {
+      if (input.files) {
+        const newFiles = Array.from(input.files);
+        state.filesToUpload = [...state.filesToUpload, ...newFiles];
+        renderGalleryPreview();
+      }
+    }
+
+    function removePhoto(type, index) {
+      if (!confirm("Rimuovere questa foto?")) return;
+
+      if (type === 'existing') {
+        state.existingGallery.splice(index, 1);
+      } else {
+        state.filesToUpload.splice(index, 1);
+      }
+      renderGalleryPreview();
+    }
+
+    function renderGalleryPreview() {
+      const container = document.getElementById('preview-thumbs');
+      const previewCardImageContainer = document.querySelector('.live-preview-card .preview-image-placeholder');
+
+      container.innerHTML = '';
+
+      // Combine existing and new for preview
+      let heroImage = null; // The image to show in the big card
+
+      // 1. Existing
+      if (state.existingGallery.length > 0) {
+        heroImage = state.existingGallery[0];
+      } else if (state.filesToUpload.length > 0) {
+        // use first new file if no existing
+        // handled below in loop logic if we want, but better here
+      }
+
+      state.existingGallery.forEach((url, idx) => {
+        const wrap = document.createElement('div');
+        wrap.style = "position:relative; width:60px; height:60px;";
+
+        const img = document.createElement('img');
+        img.src = url;
+        img.style = "width:100%; height:100%; object-fit:cover; border-radius:8px; border:2px solid var(--gold);";
+
+        const btn = document.createElement('button');
+        btn.innerHTML = "×";
+        btn.style = "position:absolute; top:-5px; right:-5px; background:red; color:white; border:none; border-radius:50%; width:18px; height:18px; font-size:12px; line-height:1; cursor:pointer;";
+        btn.onclick = () => removePhoto('existing', idx);
+
+        wrap.appendChild(img);
+        wrap.appendChild(btn);
+        container.appendChild(wrap);
+      });
+
+      // 2. New Files
+      state.filesToUpload.forEach((file, idx) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (!heroImage && idx === 0 && state.existingGallery.length === 0) heroImage = e.target.result;
+
+          const wrap = document.createElement('div');
+          wrap.style = "position:relative; width:60px; height:60px;";
+
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.style = "width:100%; height:100%; object-fit:cover; border-radius:8px; border:1px solid #ddd; opacity:0.8;";
+
+          const btn = document.createElement('button');
+          btn.innerHTML = "×";
+          btn.style = "position:absolute; top:-5px; right:-5px; background:red; color:white; border:none; border-radius:50%; width:18px; height:18px; font-size:12px; line-height:1; cursor:pointer;";
+          btn.onclick = () => removePhoto('new', idx);
+
+          wrap.appendChild(img);
+          wrap.appendChild(btn);
+          container.appendChild(wrap);
+
+          // Update hero if it was this one (async nature might be tricky, but good enough for simple preview)
+          if (!state.existingGallery.length && idx === 0) updateHeroPreview(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      if (state.existingGallery.length > 0) {
+        updateHeroPreview(state.existingGallery[0]);
+      } else if (state.filesToUpload.length === 0 && state.existingGallery.length === 0) {
+        // Reset to default placeholder
+        if (previewCardImageContainer) {
+          previewCardImageContainer.innerHTML = `
+            <span style="opacity:0.3; font-size:48px;">📷</span>
+              <div class="preview-tag" id="prev-type">${state.type.toUpperCase()}</div>
+          `;
+          previewCardImageContainer.className = "preview-image-placeholder";
+          // Remove custom styling if any
+          previewCardImageContainer.style = "";
+        }
+      } else if (heroImage) { // This handles the case where there are new files and no existing, or existing files
+        updateHeroPreview(heroImage);
+      }
+    }
+
+    function updateHeroPreview(src) {
+      const placeholder = document.querySelector('.live-preview-card .preview-image-placeholder');
+      if (placeholder) {
+        // Replace content with image
+        placeholder.className = "card-image-cover";
+        placeholder.innerHTML = `<img src="${src}" alt="Preview" /> <div class="preview-tag" id="prev-type">${state.type.toUpperCase()}</div>`;
+        // Ensure tag is still visible (it might need z-index or absolute positioning fix in CSS, but let's try)
+        // The .card-image-cover is relative, so absolute tag inside should work if tag has styles.
+        // Let's check tag styles. .preview-tag is likely absolute.
       }
     }
 

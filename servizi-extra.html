@@ -101,37 +101,30 @@
         .map((svc) => {
           const options = (svc.extra_service_options || []).filter((opt) => opt.is_active !== false);
           const provider = svc.providers || {};
+
+          let thumbnail = "";
+          if (svc.gallery_urls && svc.gallery_urls.length > 0) {
+            thumbnail = `<div style="width:calc(100% + 48px); height:200px; overflow:hidden; border-radius:16px 16px 0 0; margin:-24px -24px 20px -24px;">
+                            <img src="${svc.gallery_urls[0]}" style="width:100%; height:100%; object-fit:cover;" />
+                          </div>`;
+          }
+
           return `
-          <div class="card service-card lift-on-hover fade-in">
+          <a href="servizio-dettaglio.html?service_id=${svc.id}" class="card service-card lift-on-hover fade-in" style="overflow:hidden; display:block; text-decoration:none; color:inherit;">
+            ${thumbnail}
             <div class="card-header-row">
               <div>
-                <p class="eyebrow">${svc.category || "Generale"}</p>
-                <h3>${svc.title}</h3>
+                <p class="eyebrow">${svc.category || (svc.service_type ? svc.service_type.toUpperCase() : "SERVIZIO")}</p>
+                <h3 style="margin-bottom:4px;">${svc.title}</h3>
               </div>
-              <span class="badge badge-strong">${provider.name || "Partner"}</span>
+              <span class="badge badge-strong">${provider.name || "Partner Verificato"}</span>
             </div>
-            <p>${svc.description || ""}</p>
-            <ul class="service-options">
-              ${options
-              .map(
-                (opt) => `
-                    <li>
-                      <div>
-                        <strong>${opt.name}</strong>
-                        <span class="small-label">${opt.available_days || "Giorni su richiesta"}</span>
-                        <p>${opt.description || ""}</p>
-                      </div>
-                      <span class="badge">€ ${euros(opt.price_cents || 0)}</span>
-                    </li>
-                  `
-              )
-              .join("")}
-            </ul>
-            <div class="card-actions">
-              ${provider.email ? `<a class="btn btn-outline-sm" href="mailto:${provider.email}?subject=Servizio ${encodeURIComponent(svc.title)}">Contatta il fornitore</a>` : ""}
-              ${provider.phone ? `<a class="btn btn-ghost" href="https://wa.me/${provider.phone.replace(/\D/g, "")}" target="_blank">WhatsApp</a>` : ""}
+            <p style="color:var(--text-muted); margin-bottom:16px;">${svc.description || ""}</p>
+
+            <div class="card-actions" style="margin-top:auto;">
+              <span class="btn btn-outline-sm btn-full">Vedi Dettagli & Contatti</span>
             </div>
-          </div>
+          </a>
         `;
         })
         .join("");
@@ -142,7 +135,9 @@
       const cat = document.getElementById("service-category").value;
       const filtered = allServices.filter((svc) => {
         const matchesText = (svc.title || "").toLowerCase().includes(term) || (svc.description || "").toLowerCase().includes(term);
-        const matchesCat = !cat || (svc.category || "").toLowerCase() === cat.toLowerCase();
+        // Match both 'category' and 'service_type' for filtering
+        const type = svc.service_type || svc.category || "";
+        const matchesCat = !cat || type.toLowerCase().includes(cat.toLowerCase());
         return matchesText && matchesCat;
       });
       renderServices(filtered);
@@ -153,7 +148,7 @@
       listEl.innerHTML = "<p>Caricamento servizi...</p>";
       const { data, error } = await supabaseClient
         .from("extra_services")
-        .select("id,title,description,category,is_active, providers(name,email,phone), extra_service_options(*)")
+        .select("id,title,description,category,service_type,gallery_urls,is_active, providers(name,email,phone), extra_service_options(*)")
         .eq("is_active", true)
         .order("created_at", { ascending: false });
       if (error) {

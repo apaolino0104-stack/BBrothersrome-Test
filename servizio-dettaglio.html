@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Dettaglio Servizio – B&Brother’s</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="icon" type="image/png" href="assets/images/logo-bbrothers.png" />
+    <style>
+        /* Specific styles for detail page */
+        .option-card {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: box-shadow 0.2s;
+        }
+
+        .option-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .sticky-sidebar {
+            position: sticky;
+            top: 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container header-inner fade-in">
+            <a href="ospiti.html" class="logo">
+                <img src="assets/images/logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+                <div class="logo-text">
+                    <span class="logo-title">B&Brother’s</span>
+                    <span class="logo-subtitle">Servizi extra per gli ospiti</span>
+                </div>
+            </a>
+            <a href="servizi-extra.html" class="btn btn-ghost">← Torna ai servizi</a>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <!-- Loading State -->
+        <div class="container" style="padding-top:40px; text-align:center;">
+            <p>Caricamento dettagli servizio...</p>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const serviceId = new URLSearchParams(window.location.search).get("service_id");
+
+        function euros(cents) {
+            if (!cents && cents !== 0) return "0,00";
+            return (cents / 100).toFixed(2).replace(".", ",");
+        }
+
+        async function loadServiceDetail() {
+            if (!serviceId) {
+                document.getElementById("main-content").innerHTML = "<div class='container' style='padding:40px;'><h2>Servizio non trovato</h2><a href='servizi-extra.html'>Torna alla lista</a></div>";
+                return;
+            }
+
+            const { data: svc, error } = await supabaseClient
+                .from("extra_services")
+                .select("*, providers(*), extra_service_options(*)")
+                .eq("id", serviceId)
+                .single();
+
+            if (error || !svc) {
+                document.getElementById("main-content").innerHTML = "<div class='container' style='padding:40px;'><h2>Errore caricamento</h2><p>Impossibile trovare il servizio richiesto.</p><a href='servizi-extra.html'>Torna alla lista</a></div>";
+                return;
+            }
+
+            renderPage(svc);
+        }
+
+        function renderGallery(photos, title) {
+            const galleryEl = document.getElementById('svc-gallery');
+            if (!photos || photos.length === 0) {
+                galleryEl.innerHTML = "<p>Nessuna foto disponibile.</p>";
+                return;
+            }
+
+            const first = photos[0];
+            galleryEl.innerHTML = `
+                <div class="gallery-viewer">
+                    <div class="gallery-main">
+                        <button class="gallery-nav gallery-nav-prev" aria-label="Foto precedente" style="z-index: 2;">❮</button>
+                        <div class="gallery-zoom-wrapper">
+                            <img id="gallery-main-img" class="gallery-zoom-img" src="${first}" alt="${title}" loading="lazy" />
+                        </div>
+                        <button class="gallery-nav gallery-nav-next" aria-label="Foto successiva" style="z-index: 2;">❯</button>
+                    </div>
+                    <div class="gallery-thumbs">
+                        ${photos.map((url, idx) => `
+                            <button class="gallery-thumb ${idx === 0 ? "thumb-active" : ""}" data-idx="${idx}" aria-label="Foto ${idx + 1}">
+                                <img src="${url}" alt="Anteprima ${idx + 1}" loading="lazy" />
+                            </button>
+                        `).join("")}
+                    </div>
+                </div>
+            `;
+
+            const mainImg = document.getElementById("gallery-main-img");
+            const prevBtn = galleryEl.querySelector(".gallery-nav-prev");
+            const nextBtn = galleryEl.querySelector(".gallery-nav-next");
+            const thumbs = Array.from(document.querySelectorAll(".gallery-thumb"));
+            let currentIndex = 0;
+
+            function showPhoto(index) {
+                const url = photos[index];
+                if (!url) return;
+                mainImg.src = url;
+                thumbs.forEach(el => el.classList.remove("thumb-active"));
+                thumbs[index]?.classList.add("thumb-active");
+                currentIndex = index;
+            }
+
+            function showNext(step) {
+                const count = photos.length;
+                const target = (currentIndex + step + count) % count;
+                showPhoto(target);
+            }
+
+            thumbs.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    showPhoto(parseInt(btn.dataset.idx, 10));
+                });
+            });
+
+            prevBtn?.addEventListener("click", () => showNext(-1));
+            nextBtn?.addEventListener("click", () => showNext(1));
+        }
+
+        function renderPage(svc) {
+            const provider = svc.providers || {};
+            const options = (svc.extra_service_options || []).filter(o => o.is_active);
+
+            // Options HTML
+            let optionsHtml = '';
+            if (options.length > 0) {
+                optionsHtml = `
+             <h3 style="margin-bottom:16px;">Opzioni Disponibili</h3>
+             ${options.map(opt => {
+                    const d = opt.details || {};
+                    let metaHtml = '';
+                    let priceSuffix = '';
+
+                    // PRICE SUFFIX
+                    if (d.rate_type === 'A Persona') priceSuffix = '<span style="font-size:12px; font-weight:400; color:#6b7280;"> / pers</span>';
+                    if (d.rate_type === 'Complessivo') priceSuffix = '<span style="font-size:12px; font-weight:400; color:#6b7280;"> (Tot)</span>';
+
+                    // META DETAILS
+                    let metaParts = [];
+                    if (svc.service_type === 'guide') {
+                        if (d.duration) metaParts.push(`🕒 ${d.duration}`);
+                        if (d.difficulty) metaParts.push(`⛰️ ${d.difficulty}`);
+                    } else if (svc.service_type === 'driver' || svc.service_type === 'transfer') {
+                        if (d.vehicle) metaParts.push(`🚗 ${d.vehicle}`);
+                        if (d.pax) metaParts.push(`👥 Max ${d.pax}`);
+                        if (d.luggage) metaParts.push(`🧳 ${d.luggage}`);
+                    } else if (svc.service_type === 'chef') {
+                        if (d.included_services && d.included_services.length > 0) {
+                            metaParts.push(`✅ ${d.included_services.join(', ')}`);
+                        }
+                    }
+
+                    if (metaParts.length > 0) {
+                        metaHtml = `<div style="font-size:12px; color:#4b5563; margin-top:6px; font-weight:500;">${metaParts.join(' &nbsp;•&nbsp; ')}</div>`;
+                    }
+
+                    return `
+                <div class="option-card">
+                   <div style="display:flex; justify-content:space-between; align-items:start;">
+                      <div>
+                         <h4 style="margin:0; font-size:16px;">${opt.name}</h4>
+                         <p style="font-size:13px; color:var(--text-muted); margin:4px 0;">${opt.available_days || 'Disponibilità su richiesta'}</p>
+                         ${metaHtml}
+                         ${opt.description ? `<p style="font-size:13px; color:#6b7280; margin-top:8px; line-height:1.4;">${opt.description}</p>` : ''}
+                      </div>
+                      <div style="text-align:right;">
+                         <div style="font-weight:700; font-size:18px; color:var(--gold);">€ ${euros(opt.price_cents)}${priceSuffix}</div>
+                      </div>
+                   </div>
+                </div>
+              `;
+                }).join('')}
+           `;
+            } else {
+                optionsHtml = '<p style="font-style:italic;">Contatta il partner per preventivi su misura.</p>';
+            }
+
+            // Category Specific Details rendering
+            const detailsHtml = (() => {
+                if (!svc.details) return '';
+                let html = '';
+                const type = svc.service_type || svc.category;
+
+                if (type === 'guide') {
+                    if (svc.details.bio) html += `<div style="margin-bottom:12px;"><h4 style="font-size:16px; margin:0 0 4px 0;">Chi sono</h4><p style="font-size:14px; margin:0;">${svc.details.bio}</p></div>`;
+                    if (svc.details.languages && svc.details.languages.length > 0) {
+                        html += `<div style="margin-bottom:8px;"><strong>Lingue:</strong> ${svc.details.languages.join(', ')}</div>`;
+                    }
+                    if (svc.details.availability) {
+                        html += `<div><strong>Disponibilità:</strong> ${svc.details.availability}</div>`;
+                    }
+                } else if (type === 'chef') {
+                    if (svc.details.chef_style) {
+                        html += `<div><strong>Stile di Cucina:</strong> <span class="badge" style="background:#fff7ed; color:#c2410c; padding:2px 8px; border-radius:4px;">${svc.details.chef_style}</span></div>`;
+                    }
+                } else if (type === 'driver' || type === 'transfer') {
+                    if (svc.details.driver_desc) {
+                        html += `<div style="margin-bottom:12px;"><h4 style="font-size:16px; margin:0 0 4px 0;">La Flotta</h4><p style="font-size:14px; margin:0;">${svc.details.driver_desc}</p></div>`;
+                    }
+                }
+
+                return html ? `<div style="background:#f9fafb; padding:20px; border-radius:12px; margin-top:24px; border:1px solid #f3f4f6;">${html}</div>` : '';
+            })();
+
+            // Main Content Injection using Property Layout
+            document.getElementById("main-content").innerHTML = `
+             <section class="page-hero">
+               <div class="container fade-in">
+                 <p class="eyebrow">${svc.category || (svc.service_type || 'Servizio').toUpperCase()}</p>
+                 <h1 style="color:white;">${svc.title}</h1>
+                 <p class="page-hero-subtitle">Offerto da ${provider.name || 'Partner Verificato'}</p>
+               </div>
+             </section>
+
+             <section class="section section-light">
+               <div class="container">
+                  <div class="property-layout">
+                     
+                     <!-- Left Column: Gallery + Desc -->
+                     <div class="property-main">
+                        <div id="svc-gallery" class="property-gallery" style="margin-bottom:32px;"></div>
+                        
+                        <div class="property-description">
+                           <h2 style="margin-bottom:16px;">Descrizione</h2>
+                           <div style="line-height:1.6; color:#4b5563; margin-bottom:24px;">${svc.description || 'Nessuna descrizione disponibile.'}</div>
+                           
+                           ${detailsHtml}
+                        </div>
+                     </div>
+
+                     <!-- Right Column: Sidebar -->
+                     <aside class="property-sidebar">
+                        <div class="property-card">
+                           <h3 style="margin-bottom:20px;">Contatta il Partner</h3>
+                           
+                           ${optionsHtml}
+
+                           <div class="property-actions">
+                              ${provider.phone ? `
+                                 <a href="https://wa.me/${provider.phone.replace(/\D/g, "")}?text=Salve, sono interessato al servizio ${encodeURIComponent(svc.title)}" target="_blank" class="btn btn-whatsapp btn-full">
+                                    💬 Scrivici su WhatsApp
+                                 </a>
+                              ` : ''}
+                              ${provider.email ? `
+                                 <a href="mailto:${provider.email}?subject=Info Servizio: ${encodeURIComponent(svc.title)}" class="btn btn-outline btn-full">
+                                    ✉️ Invia Email
+                                 </a>
+                              ` : ''}
+                           </div>
+                        </div>
+                     </aside>
+
+                  </div>
+               </div>
+             </section>
+           `;
+
+            // Initialize Gallery
+            if (svc.gallery_urls && svc.gallery_urls.length > 0) {
+                renderGallery(svc.gallery_urls, svc.title);
+            }
+        }
+
+        loadServiceDetail();
+    </script>
+</body>
+
+</html>
