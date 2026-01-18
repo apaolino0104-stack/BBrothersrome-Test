@@ -469,6 +469,8 @@
                   <select id="opt-detail-ratetype" class="form-select">
                      <option value="Tratta Fissa">Tratta Fissa</option>
                      <option value="Oraria">Oraria</option>
+                     <option value="Giornaliera">Giornaliera</option>
+                     <option value="Personalizzata">Personalizzata</option>
                   </select>
                </div>
                <div class="form-group">
@@ -609,7 +611,9 @@
                 </div>` : ''}
              </div>
              <div style="text-align:right;">
-                <div style="font-weight:700; color:var(--gold);">€ ${(opt.price_cents / 100).toFixed(2)}${opt.details?.rate_type === 'A Persona' ? ' / pers' : (opt.details?.rate_type === 'Complessivo' ? ' (Tot)' : '')}</div>
+                ${opt.price_cents > 0 ?
+          `<div style="font-weight:700; color:var(--gold);">€ ${(opt.price_cents / 100).toFixed(2)}${opt.details?.rate_type === 'A Persona' ? ' / pers' : (opt.details?.rate_type === 'Complessivo' ? ' (Tot)' : '')}</div>`
+          : ''}
                 <button class="btn btn-ghost btn-sm" style="color:#ef4444; padding:4px 8px; font-size:12px;" onclick="deleteOption('${opt.id}')">Elimina</button>
              </div>
           </div>
@@ -626,8 +630,12 @@
       const priceVal = document.getElementById('opt-price').value;
       const desc = document.getElementById('opt-desc')?.value || '';
 
-      if (!name || !priceVal) {
-        alert("Inserisci almeno Nome e Prezzo.");
+      if (!name) {
+        alert("Inserisci il Nome dell'opzione.");
+        return;
+      }
+      if (!priceVal && !(state.type === 'driver' || state.type === 'transfer')) {
+        alert("Il prezzo è obbligatorio per questo tipo di servizio.");
         return;
       }
 
@@ -647,7 +655,7 @@
         optionDetails.luggage = document.getElementById('opt-detail-luggage')?.value;
       }
 
-      const priceCents = Math.round(parseFloat(priceVal) * 100);
+      const priceCents = priceVal ? Math.round(parseFloat(priceVal) * 100) : 0;
 
       const { data, error } = await supabaseClient
         .from('extra_service_options')

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Strumenti Admin – B&Brother’s</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container header-inner fade-in">
+            <a href="area-proprietari.html" class="logo">
+                <img src="assets/images/logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+                <div class="logo-text">
+                    <span class="logo-title">B&Brother’s</span>
+                    <span class="logo-subtitle">Admin Tools</span>
+                </div>
+            </a>
+            <a href="area-proprietari.html" class="nav-link">← Torna all'Area Proprietari</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="page-hero">
+            <div class="container fade-in">
+                <p class="eyebrow">Amministrazione</p>
+                <h1>Creazione Nuovi Fornitori</h1>
+                <p class="page-hero-subtitle">Crea manualmente un account fornitore e genera il relativo profilo.</p>
+            </div>
+        </section>
+
+        <section class="section section-light">
+            <div class="container auth-card">
+                <form id="create-provider-form" class="auth-form">
+                    <h3>Dati Nuovo Fornitore</h3>
+
+                    <label>
+                        Email
+                        <input type="email" id="prov-email" required placeholder="fornitore@email.com" />
+                    </label>
+
+                    <button type="submit" class="btn btn-primary btn-full">Crea Fornitore</button>
+
+                    <div id="result-message" class="note" style="margin-top:16px; white-space: pre-wrap;"></div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Admin Check
+        const ADMIN_EMAIL = "a.paolino0104@gmail.com";
+
+        async function checkAdmin() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user || user.email !== ADMIN_EMAIL) {
+                alert("Accesso negato. Questa pagina è riservata all'amministratore.");
+                window.location.href = "login.html";
+            }
+        }
+        checkAdmin();
+
+        const form = document.getElementById("create-provider-form");
+        const msgEl = document.getElementById("result-message");
+
+        function generatePassword(length = 12) {
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+            let retVal = "";
+            for (let i = 0, n = charset.length; i < length; ++i) {
+                retVal += charset.charAt(Math.floor(Math.random() * n));
+            }
+            return retVal;
+        }
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            msgEl.textContent = "Creazione in corso...";
+            msgEl.style.color = "var(--text-color)";
+
+            const email = document.getElementById("prov-email").value.trim();
+            const password = generatePassword(); // Auto-generated
+
+            // Create a SECOND client instance specifically for this operation
+            // persistSession: false prevents this client from overwriting the Admin's session in localStorage
+            const tempClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                auth: {
+                    persistSession: false,
+                    autoRefreshToken: false,
+                    detectSessionInUrl: false
+                }
+            });
+
+            // 1. Sign Up User
+            const { data: authData, error: authError } = await tempClient.auth.signUp({
+                email,
+                password
+            });
+
+            if (authError) {
+                msgEl.textContent = "Errore creazione utente: " + authError.message;
+                msgEl.style.color = "red";
+                return;
+            }
+
+            const newUserId = authData.user?.id;
+            if (!newUserId) {
+                msgEl.textContent = "Errore: ID utente non ritornato.";
+                msgEl.style.color = "red";
+                return;
+            }
+
+            // 2. Insert into providers table
+            // We use tempClient because we are now "logged in" as the new user in that client memory
+            // This satisfies RLS policies "Users can insert their own profile"
+            const { error: dbError } = await tempClient.from("providers").insert({
+                user_id: newUserId,
+                email: email,
+                name: null       // Explicitly null as requested
+            });
+
+            if (dbError) {
+                msgEl.textContent = "Utente auth creato, ma errore creazione profilo provider: " + dbError.message;
+                msgEl.style.color = "orange";
+                return;
+            }
+
+            // 3. Success
+            msgEl.textContent = `✅ SUCCESSO!\n\nFornitore creato correttamente.\n\nDati per l'accesso:\nEmail: ${email}\nPassword: ${password}\n\nPuoi inviare queste credenziali al fornitore.`;
+            msgEl.style.color = "green";
+        });
+    </script>
+</body>
+
+</html>
