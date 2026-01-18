@@ -258,7 +258,96 @@
       pExtras: document.getElementById('prev-extras')
     };
 
+    // --- HELPER: Get Dynamic Details from DOM ---
+    function getDetailsFromDOM() {
+      let currentDetails = {};
+
+      // We only scrape fields relevant to the CURRENT state.type
+      if (state.type === 'guide') {
+        currentDetails.bio = document.getElementById('dyn-guide-bio')?.value || '';
+        // Languages
+        const langs = Array.from(document.querySelectorAll('.dyn-guide-lang:checked')).map(cb => cb.value);
+        const customLang = document.getElementById('dyn-guide-lang-custom')?.value;
+        if (customLang) langs.push(customLang);
+        currentDetails.languages = langs;
+        // Availability
+        currentDetails.availability = document.getElementById('dyn-guide-avail')?.value || '';
+
+      } else if (state.type === 'chef') {
+        const styleSel = document.getElementById('dyn-chef-style')?.value;
+        const styleCust = document.getElementById('dyn-chef-style-custom')?.value;
+        // Logic: if "Altro", take custom, else take selection. 
+        // We might want to store them separately to restore UI state correctly, 
+        // but for now let's match saveService logic.
+        // ACTUALLY: To restore UI state correctly (show/hide custom input), strictly saving the final string 
+        // might make it hard to know if it was "Altro" + "CustomString" or just "CustomString".
+        // Known styles list:
+        const knownStyles = ['Tradizionale Locale', 'Gourmet / Moderno', 'Pesce & Frutti di Mare', 'Vegetariano / Vegano', 'Etnico / Sushi', 'Altro'];
+
+        currentDetails.chef_style = (styleSel === 'Altro' && styleCust) ? styleCust : styleSel;
+
+      } else if (state.type === 'driver' || state.type === 'transfer') {
+        currentDetails.driver_desc = document.getElementById('dyn-driver-desc')?.value || '';
+      }
+
+      return currentDetails;
+    }
+
+    // --- HELPER: Populate DOM from State ---
+    function populateDOMFromDetails() {
+      const d = state.details || {};
+
+      if (state.type === 'guide') {
+        if (d.bio !== undefined) document.getElementById('dyn-guide-bio').value = d.bio;
+        if (d.availability !== undefined) document.getElementById('dyn-guide-avail').value = d.availability;
+
+        // Languages
+        if (d.languages && Array.isArray(d.languages)) {
+          // Reset first
+          document.querySelectorAll('.dyn-guide-lang').forEach(cb => cb.checked = false);
+          document.getElementById('dyn-guide-lang-custom').value = '';
+
+          let known = ['Italiano', 'Inglese', 'Spagnolo', 'Tedesco'];
+          let others = [];
+
+          d.languages.forEach(l => {
+            if (known.includes(l)) {
+              const cb = document.querySelector(`.dyn-guide-lang[value="${l}"]`);
+              if (cb) cb.checked = true;
+            } else {
+              others.push(l);
+            }
+          });
+          if (others.length > 0) document.getElementById('dyn-guide-lang-custom').value = others.join(', ');
+        }
+
+      } else if (state.type === 'chef') {
+        if (d.chef_style) {
+          const knownStyles = ['Tradizionale Locale', 'Gourmet / Moderno', 'Pesce & Frutti di Mare', 'Vegetariano / Vegano', 'Etnico / Sushi'];
+          const styleInput = document.getElementById('dyn-chef-style');
+          const customInput = document.getElementById('dyn-chef-style-custom');
+
+          if (knownStyles.includes(d.chef_style)) {
+            styleInput.value = d.chef_style;
+            customInput.style.display = 'none';
+          } else {
+            styleInput.value = 'Altro';
+            customInput.value = d.chef_style; // Populate custom input with the value
+            customInput.style.display = 'block';
+          }
+        }
+      } else if (state.type === 'driver' || state.type === 'transfer') {
+        if (d.driver_desc !== undefined) document.getElementById('dyn-driver-desc').value = d.driver_desc;
+      }
+
+      updatePreview();
+    }
+
     function setServiceType(type) {
+      // 1. Save current state before switching
+      // Merge current inputs into state.details
+      state.details = { ...state.details, ...getDetailsFromDOM() };
+
       state.type = type;
       // Update UI selection
       els.typeCards.forEach(c => {
@@ -272,7 +361,12 @@
           c.style.background = 'white';
         }
       });
+
       updateDynamicSection();
+
+      // 2. Restore state for new type
+      populateDOMFromDetails();
+
       updateOptionForm();
       updatePreview();
     }
@@ -639,48 +733,14 @@
           setServiceType(state.type);
 
           // POPULATE DYNAMIC INPUTS
-          setTimeout(() => {
-            if (svc.details) {
-              if (state.type === 'guide') {
-                if (svc.details.bio) document.getElementById('dyn-guide-bio').value = svc.details.bio;
-                if (svc.details.availability) document.getElementById('dyn-guide-avail').value = svc.details.availability;
-                // Languages
-                if (svc.details.languages && Array.isArray(svc.details.languages)) {
-                  let known = ['Italiano', 'Inglese', 'Spagnolo', 'Tedesco'];
-                  let others = [];
-                  svc.details.languages.forEach(l => {
-                    if (known.includes(l)) {
-                      const cb = document.querySelector(`.dyn - guide - lang[value = "${l}"]`);
-                      if (cb) cb.checked = true;
-                    } else {
-                      others.push(l);
-                    }
-                  });
-                  if (others.length > 0) document.getElementById('dyn-guide-lang-custom').value = others.join(', ');
-                }
-              }
-              if (state.type === 'chef') {
-                // Only Style remaining
-                if (svc.details.chef_style) {
-                  const knownStyles = ['Tradizionale Locale', 'Gourmet / Moderno', 'Pesce & Frutti di Mare', 'Vegetariano / Vegano', 'Etnico / Sushi'];
-                  const styleInput = document.getElementById('dyn-chef-style');
-                  const customInput = document.getElementById('dyn-chef-style-custom');
+          // Store DB details into state
+          if (svc.details) {
+            state.details = svc.details;
+          }
 
-                  if (knownStyles.includes(svc.details.chef_style)) {
-                    styleInput.value = svc.details.chef_style;
-                    customInput.style.display = 'none';
-                  } else {
-                    styleInput.value = 'Altro';
-                    customInput.value = svc.details.chef_style;
-                    customInput.style.display = 'block';
-                  }
-                }
-              }
-              if (state.type === 'driver' || state.type === 'transfer') {
-                if (svc.details.driver_desc) document.getElementById('dyn-driver-desc').value = svc.details.driver_desc;
-              }
-              updatePreview();
-            }
+          // Use helper to populate DOM
+          setTimeout(() => {
+            populateDOMFromDetails();
           }, 50);
 
           // Trigger update
@@ -754,24 +814,40 @@
 
       msg.textContent = "Salvataggio dati...";
 
-      let dynamicDetails = {};
+      // Update state with any final edits before saving
+      state.details = { ...state.details, ...getDetailsFromDOM() };
 
-      if (state.type === 'guide') {
-        dynamicDetails.bio = document.getElementById('dyn-guide-bio')?.value || '';
-        // Languages
-        const langs = Array.from(document.querySelectorAll('.dyn-guide-lang:checked')).map(cb => cb.value);
-        const customLang = document.getElementById('dyn-guide-lang-custom')?.value;
-        if (customLang) langs.push(customLang);
-        dynamicDetails.languages = langs;
-        // Availability
-        dynamicDetails.availability = document.getElementById('dyn-guide-avail')?.value || 'Su Richiesta';
-      } else if (state.type === 'chef') {
-        const styleSel = document.getElementById('dyn-chef-style')?.value;
-        const styleCust = document.getElementById('dyn-chef-style-custom')?.value;
-        dynamicDetails.chef_style = (styleSel === 'Altro' && styleCust) ? styleCust : styleSel;
-      } else if (state.type === 'driver' || state.type === 'transfer') {
-        dynamicDetails.driver_desc = document.getElementById('dyn-driver-desc')?.value || '';
-      }
+      let dynamicDetails = state.details; // Use the persisted state object directly
+
+      // Filter details based on current type if needed, but keeping all is also fine (and safer for preserving hidden data)
+      // However, to keep DB clean, we might want to only send keys relevant to current type? 
+      // Current implementation was recreating object from scratch based on type.
+      // Let's reconstruct to match original behavior of ONLY saving current type's details + maybe others?
+      // Actually previous code ONLY saved current type details. If we want to support "I filled out Guide, switched to Chef, and saved", 
+      // do we want to save Guide details too? Probably strictly speaking "No", because `service_type` is Chef.
+      // BUT, the user might expect it. 
+      // Given the schema likely uses JSONB for details, it's flexible.
+      // Let's stick to: Save what is relevant to the SELECTED type to avoid clutter, OR save everything.
+      // The original code constructed `dynamicDetails` strictly from DOM.
+      // Let's use `getDetailsFromDOM()` (which we already merged into state) but just extract active ones.
+
+      // On second thought, simply using `getDetailsFromDOM()` here ensures we get the latest values from the visible inputs 
+      // (in case user didn't switch type but just edited).
+      // We already did `state.details = ... getDetailsFromDOM()`. 
+      // So `state.details` is up to date.
+
+      // Let's just filter `state.details` to be clean, or just send `state.details` if we don't mind extra junk.
+      // To mimic original behavior and be safe:
+      dynamicDetails = {}; // Reset to ensure we only save relevant stuff for the chosen type?
+      // No, if I switch from Guide -> Chef -> Guide, I want to save Guide details.
+      // If I save as Chef, I probably only care about Chef details.
+
+      // Let's regenerate dynamicDetails specifically for the *current* type using getDetailsFromDOM() logic,
+      // but wait, getDetailsFromDOM is strictly for the *active* type.
+      // So...
+
+      dynamicDetails = getDetailsFromDOM(); // This gets the freshest data for the current type.
+
 
       const payload = {
         provider_id: state.provider.id,
