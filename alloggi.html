@@ -151,12 +151,30 @@
           const chosenPhoto = sortedPhotos[0];
           const coverUrl = chosenPhoto ? publicUrlFromPath(chosenPhoto.path) : publicUrlFromPath(p.cover_photo_url);
 
+          const isGuestHouse = p.property_type === "guest_house";
+          // Calculate Guest Range for Guest House
+          let guestLabel = `${p.guests || "?"} ospiti`;
+          if (isGuestHouse && p.sub_rooms && p.sub_rooms.length > 0) {
+            const capacities = p.sub_rooms.map(r => r.guests).filter(g => g > 0);
+            if (capacities.length > 0) {
+              const min = Math.min(...capacities);
+              const max = Math.max(...capacities);
+              guestLabel = min === max ? `${max} posti` : `${min}-${max} posti`;
+            } else {
+              guestLabel = "Guest House"; // Fallback if no valid capacities
+            }
+          } else if (isGuestHouse) {
+            guestLabel = "Guest House";
+          }
+
+          const linkUrl = isGuestHouse ? `guesthouse.html?id=${p.id}` : `property.html?id=${p.id}`;
+
           return `
-        <a class="listing-card listing-large listing-link lift-on-hover fade-in" href="property.html?id=${p.id}">
+        <a class="listing-card listing-large listing-link lift-on-hover fade-in ${isGuestHouse ? "guest-house" : ""}" href="${linkUrl}">
           ${coverUrl ? `<img src="${coverUrl}" alt="Foto di ${p.title}" class="listing-cover" />` : ""}
           <div class="listing-badge-row">
             <span class="badge">${p.zone || "Roma"}</span>
-            <span class="badge badge-strong">${p.guests || "?"} ospiti</span>
+            <span class="badge badge-strong">${guestLabel}</span>
           </div>
           <h2>${p.title}</h2>
           <p>${p.short_description || ""}</p>
@@ -165,7 +183,7 @@
           </ul>
           <div class="listing-footer">
             <span class="rating">Annuncio gestito da B&Brother’s</span>
-            <span class="btn btn-outline-sm">Apri la scheda</span>
+            <span class="btn btn-outline-sm">${isGuestHouse ? "Vedi Stanze" : "Apri la scheda"}</span>
           </div>
         </a>`;
         })
@@ -282,8 +300,9 @@
 
       const { data, error } = await supabaseClient
         .from("properties")
-        .select("*, property_photos(path,is_cover,sort_order)")
+        .select("*, property_photos(path,is_cover,sort_order), sub_rooms:properties!parent_id(guests)")
         .eq("status", "published")
+        .neq("property_type", "room")
         .order("created_at", { ascending: false });
 
       if (error) {

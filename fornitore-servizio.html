@@ -6,6 +6,7 @@
   <title>Editor Profilo Partner – B&Brother’s</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" type="image/png" href="assets/images/logo-bbrothers.png" />
 </head>
 
 <body>
@@ -612,7 +613,7 @@
              </div>
              <div style="text-align:right;">
                 ${opt.price_cents > 0 ?
-          `<div style="font-weight:700; color:var(--gold);">€ ${(opt.price_cents / 100).toFixed(2)}${opt.details?.rate_type === 'A Persona' ? ' / pers' : (opt.details?.rate_type === 'Complessivo' ? ' (Tot)' : '')}</div>`
+          `<div style="font-weight:700; color:var(--gold);">€ ${(opt.price_cents / 100).toFixed(2)}${opt.details?.rate_type === 'A Persona' ? ' / pers' : (opt.details?.rate_type === 'Complessivo' ? ' (Tot)' : (opt.details?.rate_type === 'Oraria' ? ' / h' : (opt.details?.rate_type === 'Giornaliera' ? ' / g' : '')))}</div>`
           : ''}
                 <button class="btn btn-ghost btn-sm" style="color:#ef4444; padding:4px 8px; font-size:12px;" onclick="deleteOption('${opt.id}')">Elimina</button>
              </div>

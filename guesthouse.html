@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Guest House – B&Brother’s</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="assets/css/style.css?v=2" />
+    <link rel="icon" type="image/png" href="assets/images/logo-bbrothers.png" />
+    <style>
+        .room-card {
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .room-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .room-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .room-content {
+            padding: 1.5rem;
+        }
+
+        .room-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .room-details {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container header-inner fade-in">
+            <a href="ospiti.html" class="logo">
+                <img src="assets/images/logo-bbrothers.png" alt="Logo B&Brother’s" class="logo-img" />
+                <div class="logo-text">
+                    <span class="logo-title">B&Brother’s</span>
+                    <span class="logo-subtitle">Gestione affitti brevi a Roma</span>
+                </div>
+            </a>
+            <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Apri il menu" />
+            <label for="nav-toggle" class="menu-toggle">
+                <span class="menu-toggle-box">
+                    <span class="menu-toggle-line"></span>
+                    <span class="menu-toggle-line"></span>
+                    <span class="menu-toggle-line"></span>
+                </span>
+            </label>
+            <nav class="main-nav">
+                <a href="ospiti.html" class="nav-link">Home ospiti</a>
+                <a href="alloggi.html" class="nav-link nav-link-active">Tutti gli alloggi</a>
+                <a href="servizi-extra.html" class="nav-link">Servizi extra</a>
+                <a href="ospiti.html#come-funziona-ospiti" class="nav-link">Come funziona</a>
+                <a href="contatti.html" class="nav-link">Contatti</a>
+            </nav>
+            <a href="proprietari.html" class="nav-link nav-link-ghost">Sei un proprietario?</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="page-hero">
+            <div class="container fade-in">
+                <p class="eyebrow" id="prop-zone">Guest House</p>
+                <h1 id="prop-title">Caricamento...</h1>
+                <p class="page-hero-subtitle" id="prop-short"></p>
+            </div>
+        </section>
+
+        <section class="section section-light">
+            <div class="container">
+                <div id="prop-message" class="note"></div>
+
+                <!-- Guest House Description & Photos -->
+                <div class="property-layout" style="margin-bottom: 3rem;">
+                    <div class="property-main">
+                        <div id="prop-gallery" class="property-gallery"></div>
+                        <div class="property-description">
+                            <h2>Descrizione della struttura</h2>
+                            <p id="prop-full"></p>
+                        </div>
+                    </div>
+                    <aside class="property-sidebar">
+                        <div class="property-card">
+                            <h3>I nostri contatti</h3>
+                            <p>Per informazioni generali sulla struttura:</p>
+                            <div class="property-actions"
+                                style="display: flex; flex-direction: column; gap: 10px; margin-top:1rem;">
+                                <a id="book-gh-btn" href="#" class="btn btn-primary btn-full"
+                                    style="display:none;">Prenota l'intera struttura</a>
+                                <a id="whatsapp-link" href="https://wa.me/393345071226"
+                                    class="btn btn-outline btn-full">Scrivici su WhatsApp</a>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+
+                <!-- Rooms List -->
+                <div class="section-header">
+                    <h2>Le nostre stanze</h2>
+                    <p class="section-subtitle">Scegli la stanza perfetta per il tuo soggiorno.</p>
+                </div>
+                <div id="rooms-grid" class="cards-grid">
+                    <!-- Rooms will be loaded here -->
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <p>© 2025 B&Brother’s – Gestione Affitti Brevi a Roma. Tutti i diritti riservati.</p>
+            <p>WhatsApp: +39 334 507 1226 · Email: a.paolino0104@gmail.com</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = "https://qmsgcpkxdkijsxyvhuog.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtc2djcGt4ZGtpanN4eXZodW9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjQ1MzcsImV4cCI6MjA3ODkwMDUzN30.husS5qI2XxYqovnx3QX-EPFPca4SPWRQQo9rHM8NLEE";
+        const PHOTO_BUCKET = "property-photos";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const propertyId = params.get("id");
+        const titleEl = document.getElementById("prop-title");
+        const shortEl = document.getElementById("prop-short");
+        const fullEl = document.getElementById("prop-full");
+        const zoneEl = document.getElementById("prop-zone");
+        const galleryEl = document.getElementById("prop-gallery");
+        const roomsGrid = document.getElementById("rooms-grid");
+        const whatsappLink = document.getElementById("whatsapp-link");
+
+        function publicUrlFromPath(path) {
+            if (!path) return null;
+            if (path.startsWith("http")) return path;
+            const { data } = supabaseClient.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+            return data?.publicUrl || null;
+        }
+
+        function renderGallery(photos, propertyTitle) {
+            if (photos.length === 0) {
+                galleryEl.innerHTML = "<p>Il proprietario non ha ancora caricato foto.</p>";
+                return;
+            }
+
+            const first = photos[0];
+            galleryEl.innerHTML = `
+      <div class="gallery-viewer">
+        <div class="gallery-main">
+          <button class="gallery-nav gallery-nav-prev" aria-label="Foto precedente">❮</button>
+          <img
+            id="gallery-main-img"
+            src="${first.url}"
+            alt="${propertyTitle || "Foto della struttura"}"
+            loading="lazy"
+          />
+          <button class="gallery-nav gallery-nav-next" aria-label="Foto successiva">❯</button>
+        </div>
+        <div class="gallery-thumbs" id="gallery-thumbs">
+          ${photos
+                    .map(
+                        (photo, idx) => `
+                <button class="gallery-thumb ${idx === 0 ? "thumb-active" : ""}" data-idx="${idx}" aria-label="Foto ${idx + 1}">
+                  <img src="${photo.url}" alt="Anteprima foto ${idx + 1}" loading="lazy" />
+                </button>
+              `
+                    )
+                    .join("")}
+        </div>
+      </div>
+    `;
+
+            const mainImg = document.getElementById("gallery-main-img");
+            const prevBtn = galleryEl.querySelector(".gallery-nav-prev");
+            const nextBtn = galleryEl.querySelector(".gallery-nav-next");
+            const thumbs = Array.from(document.querySelectorAll(".gallery-thumb"));
+            let currentIndex = 0;
+
+            function showPhoto(index) {
+                const photo = photos[index];
+                if (!photo) return;
+                mainImg.src = photo.url;
+                mainImg.alt = propertyTitle || "Foto della struttura";
+                thumbs.forEach((el) => el.classList.remove("thumb-active"));
+                thumbs[index]?.classList.add("thumb-active");
+                currentIndex = index;
+            }
+
+            function showNext(step) {
+                const count = photos.length;
+                const target = (currentIndex + step + count) % count;
+                showPhoto(target);
+            }
+
+            thumbs.forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const index = parseInt(btn.dataset.idx, 10);
+                    showPhoto(index);
+                });
+            });
+
+            prevBtn?.addEventListener("click", () => showNext(-1));
+            nextBtn?.addEventListener("click", () => showNext(1));
+        }
+
+        async function loadGallery(photoRows, coverFallback, propertyTitle) {
+            galleryEl.innerHTML = "<p>Caricamento foto...</p>";
+            const orderedRows = Array.isArray(photoRows)
+                ? [...photoRows].sort((a, b) => {
+                    if (a.is_cover === b.is_cover) return (a.sort_order || 0) - (b.sort_order || 0);
+                    return a.is_cover ? -1 : 1;
+                })
+                : [];
+
+            const photos = orderedRows.map((row) => ({
+                url: publicUrlFromPath(row.path),
+                name: row.is_cover ? "Foto di copertina" : row.path?.split("/").pop() || "Foto",
+            }));
+
+            if (photos.length === 0 && coverFallback) {
+                photos.push({ url: coverFallback, name: "Foto di copertina" });
+            }
+
+            renderGallery(photos, propertyTitle);
+        }
+
+        async function loadRooms(parentId) {
+            roomsGrid.innerHTML = "<p>Caricamento stanze...</p>";
+            const { data, error } = await supabaseClient
+                .from("properties")
+                .select("*, property_photos(path, is_cover)")
+                .eq("parent_id", parentId)
+                .eq("status", "published")
+                .order("title");
+
+            if (error) {
+                roomsGrid.innerHTML = "Errore caricamento stanze.";
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                roomsGrid.innerHTML = "<p>Nessuna stanza disponibile al momento.</p>";
+                return;
+            }
+
+            roomsGrid.innerHTML = data.map(room => {
+                // Find cover photo
+                const coverPhoto = room.property_photos?.find(p => p.is_cover) || room.property_photos?.[0];
+                const coverUrl = coverPhoto ? publicUrlFromPath(coverPhoto.path) : publicUrlFromPath(room.cover_photo_url);
+
+                return `
+            <a href="property.html?id=${room.id}" class="room-card fade-in">
+                ${coverUrl ? `<img src="${coverUrl}" alt="${room.title}" class="room-image" />` : '<div class="room-image" style="background:#eee;"></div>'}
+                <div class="room-content">
+                    <h3 class="room-title">${room.title}</h3>
+                    <div class="room-details">
+                        ${room.guests ? `<span>${room.guests} ospiti</span>` : ''}
+                        ${room.base_price ? ` • €${room.base_price} / notte` : ''}
+                    </div>
+                     <p>${room.short_description || ''}</p>
+                     <span class="btn btn-outline btn-small" style="margin-top:1rem;">Vedi Dettagli</span>
+                </div>
+            </a>
+            `;
+            }).join("");
+        }
+
+        async function loadGuestHouse() {
+            if (!propertyId) return;
+
+            const { data, error } = await supabaseClient
+                .from("properties")
+                .select("*, property_photos(*)")
+                .eq("id", propertyId)
+                .single();
+
+            if (error || !data) {
+                titleEl.textContent = "Struttura non trovata";
+                return;
+            }
+
+            const property = data;
+            titleEl.textContent = property.title;
+            if (property.zone) zoneEl.textContent = property.zone + " (Guest House)";
+            shortEl.textContent = property.short_description || "";
+            fullEl.textContent = property.full_description || "";
+
+            whatsappLink.href = `https://wa.me/393345071226?text=${encodeURIComponent(
+                `Ciao, vorrei informazioni sulla Guest House "${property.title}"`
+            )}`;
+
+            // Custom Booking Link handling
+            const bookBtn = document.getElementById("book-gh-btn");
+            if (property.booking_link) {
+                bookBtn.href = property.booking_link;
+                bookBtn.style.display = "flex";
+            } else if (property.smartpms_id) {
+                // Fallback to smartpms if no custom link is provided
+                bookBtn.href = `https://alessiopaolino.bookpage.io/it/properties/${property.smartpms_id}`;
+                bookBtn.style.display = "flex";
+            } else {
+                bookBtn.style.display = "none";
+            }
+
+            loadGallery(property.property_photos, property.cover_photo_url, property.title);
+            loadRooms(property.id);
+        }
+
+        loadGuestHouse();
+    </script>
+
+</body>
+
+</html>

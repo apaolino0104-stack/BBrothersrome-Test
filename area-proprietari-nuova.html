@@ -6,6 +6,7 @@
   <title>Nuova proprietà – B&Brother’s</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" type="image/png" href="assets/images/logo-bbrothers.png" />
 </head>
 
 <body>
@@ -66,10 +67,24 @@
             Titolo
             <input type="text" id="prop-title" required />
           </label>
-          <label>
-            Zona
-            <input type="text" id="prop-zone" />
-          </label>
+
+          <!-- Hidden field for parent_id (used when creating a room) -->
+          <input type="hidden" id="prop-parent-id" />
+
+          <div class="two-cols">
+            <label>
+              Tipo struttura
+              <select id="prop-type">
+                <option value="apartment">Appartamento</option>
+                <option value="guest_house">Guest House</option>
+                <option value="room" disabled>Stanza (Seleziona da Modifica Guest House)</option>
+              </select>
+            </label>
+            <label>
+              Zona
+              <input type="text" id="prop-zone" />
+            </label>
+          </div>
           <label>
             Descrizione breve
             <textarea id="prop-short" rows="2"></textarea>
@@ -88,6 +103,10 @@
               <input type="number" id="prop-price" step="0.01" />
             </label>
           </div>
+          <label>
+            Link di prenotazione (Opzionale)
+            <input type="url" id="prop-booking-link" placeholder="https://..." />
+          </label>
           <label>
             Foto dell'alloggio (puoi selezionarne più di una)
             <input type="file" id="prop-photos" accept="image/*" multiple />
@@ -133,6 +152,8 @@
 
     let currentUser = null;
 
+    const paramParentId = new URLSearchParams(window.location.search).get("parent_id");
+
     async function handleNewProperty(e) {
       e.preventDefault();
       const msg = document.getElementById("prop-message");
@@ -140,10 +161,14 @@
 
       const title = document.getElementById("prop-title").value;
       const zone = document.getElementById("prop-zone").value;
+      const type = document.getElementById("prop-type").value;
+      const parentId = document.getElementById("prop-parent-id").value || null;
+
       const shortDesc = document.getElementById("prop-short").value;
       const fullDesc = document.getElementById("prop-full").value;
       const guests = parseInt(document.getElementById("prop-guests").value || "0", 10);
       const price = parseFloat(document.getElementById("prop-price").value || "0");
+      const bookingLink = document.getElementById("prop-booking-link").value;
       const photoFiles = Array.from(document.getElementById("prop-photos").files || []);
 
       const { data: propData, error: propError } = await supabaseClient
@@ -152,6 +177,9 @@
           owner_id: currentUser.id,
           title,
           zone,
+          property_type: type,
+          parent_id: parentId,
+          booking_link: bookingLink,
           short_description: shortDesc,
           full_description: fullDesc,
           guests,
@@ -216,13 +244,54 @@
       }
 
       document.getElementById("new-property-form").reset();
-      setTimeout(() => (window.location.href = "area-proprietari.html"), 800);
+
+      // If we created a room, return to the parent guest house edit page
+      if (parentId) {
+        setTimeout(() => (window.location.href = `area-proprietari-modifica.html?id=${parentId}`), 800);
+      } else {
+        setTimeout(() => (window.location.href = "area-proprietari.html"), 800);
+      }
     }
 
     (async () => {
       currentUser = await getCurrentUser();
       if (!currentUser) return;
+
+      // Setup based on URL params
+      if (paramParentId) {
+        document.getElementById("prop-parent-id").value = paramParentId;
+        const typeSelect = document.getElementById("prop-type");
+        // Force type to room/stanza
+        // We temporarily enable the option to select it, or just add it if missing
+        let roomOpt = typeSelect.querySelector('option[value="room"]');
+        if (roomOpt) {
+          roomOpt.removeAttribute('disabled');
+          typeSelect.value = "room";
+          // Disable interaction to prevent changing it
+          typeSelect.disabled = true;
+        }
+
+        document.querySelector(".page-hero h1").textContent = "Aggiungi Stanza";
+        document.querySelector(".page-hero-subtitle").textContent = "Inserisci i dettagli della nuova stanza per la Guest House.";
+      }
+
       document.getElementById("new-property-form").addEventListener("submit", handleNewProperty);
+
+      // Toggle guests field based on property type
+      const typeSelect = document.getElementById("prop-type");
+      const guestsInput = document.getElementById("prop-guests").closest("label"); // Assuming label wraps input
+
+      function toggleGuestsField() {
+        if (typeSelect.value === "guest_house") {
+          document.getElementById("prop-guests").value = "";
+          guestsInput.style.display = "none";
+        } else {
+          guestsInput.style.display = "block";
+        }
+      }
+
+      typeSelect.addEventListener("change", toggleGuestsField);
+      toggleGuestsField(); // Run on init
     })();
   </script>
 </body>

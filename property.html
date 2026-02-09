@@ -237,11 +237,32 @@
 
       // Booking Engine Link
       const bookBtn = document.getElementById("book-now-btn");
-      if (property.smartpms_id) {
+      if (property.booking_link) {
+        bookBtn.href = property.booking_link;
+        bookBtn.style.display = "flex";
+      } else if (property.smartpms_id) {
         bookBtn.href = `https://alessiopaolino.bookpage.io/it/properties/${property.smartpms_id}`;
         bookBtn.style.display = "flex";
       } else {
-        bookBtn.style.display = "none"; // Hide if no ID
+        bookBtn.style.display = "none"; // Hide if no valid link
+      }
+
+      // If this is a room, add link to parent Guest House
+      if (property.parent_id) {
+        const { data: parentData } = await supabaseClient
+          .from("properties")
+          .select("title")
+          .eq("id", property.parent_id)
+          .single();
+
+        if (parentData) {
+          const backLink = document.createElement("a");
+          backLink.href = `guesthouse.html?id=${property.parent_id}`;
+          backLink.className = "btn btn-outline btn-full";
+          backLink.style.marginTop = "10px";
+          backLink.innerHTML = `← Torna a ${parentData.title}`;
+          document.querySelector(".property-actions").appendChild(backLink);
+        }
       }
 
       loadGallery(property.property_photos || [], property.cover_photo_url, property.title);

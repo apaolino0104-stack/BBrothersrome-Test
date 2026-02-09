@@ -1433,3 +1433,93 @@ img {
 .preview-tags-row {
   margin-bottom: 24px;
 }
+
+/* =========================================
+   GUEST HOUSE CARD STYLING (Force Override)
+   ========================================= */
+a.listing-card.guest-house {
+  background-color: #fff8e1 !important;
+  /* Distinct yellow/gold tint */
+  border: none !important;
+  /* No border as requested */
+  box-shadow: 0 4px 12px rgba(218, 165, 32, 0.2);
+}
+
+a.listing-card.guest-house:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(218, 165, 32, 0.4) !important;
+}
+
+/* Make the badge stand out */
+a.listing-card.guest-house .badge.badge-strong {
+  background-color: #b8860b !important;
+  color: #fff !important;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+}
+
+/* Adjust the button */
+a.listing-card.guest-house .btn-outline-sm {
+  color: #b8860b !important;
+  border-color: #b8860b !important;
+}
+
+a.listing-card.guest-house .btn-outline-sm:hover {
+  background-color: rgba(184, 134, 11, 0.1) !important;
+}
+
+/* =========================================
+   SORTABLE GALLERY STYLES
+   ========================================= */
+.gallery-sortable-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.gallery-item {
+  position: relative;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #eee;
+  cursor: grab;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.gallery-item:active {
+  cursor: grabbing;
+}
+
+.gallery-item.sortable-ghost {
+  opacity: 0.4;
+  background: #f0f0f0;
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+}
+
+.gallery-item-actions {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gallery-item-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
