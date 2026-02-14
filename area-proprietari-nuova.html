@@ -108,6 +108,10 @@
             <input type="url" id="prop-booking-link" placeholder="https://..." />
           </label>
           <label>
+            Numero di Telefono/WhatsApp (Opzionale)
+            <input type="text" id="prop-phone" placeholder="+39 333 1234567" />
+          </label>
+          <label>
             Foto dell'alloggio (puoi selezionarne più di una)
             <input type="file" id="prop-photos" accept="image/*" multiple />
             <span class="small-label">La prima foto caricata diventa la copertina.</span>
@@ -169,6 +173,7 @@
       const guests = parseInt(document.getElementById("prop-guests").value || "0", 10);
       const price = parseFloat(document.getElementById("prop-price").value || "0");
       const bookingLink = document.getElementById("prop-booking-link").value;
+      const phoneNumber = document.getElementById("prop-phone").value;
       const photoFiles = Array.from(document.getElementById("prop-photos").files || []);
 
       const { data: propData, error: propError } = await supabaseClient
@@ -180,6 +185,7 @@
           property_type: type,
           parent_id: parentId,
           booking_link: bookingLink,
+          phone_number: phoneNumber,
           short_description: shortDesc,
           full_description: fullDesc,
           guests,

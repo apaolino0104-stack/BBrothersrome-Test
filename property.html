@@ -203,18 +203,22 @@
     }
 
     async function loadProperty() {
-      if (!propertyId) return;
+      if (!propertyId) {
+        document.getElementById("prop-title").textContent = "ID proprietà non valido";
+        return;
+      }
       messageEl.textContent = "";
 
+      // We need to fetch parent to check for phone number if not present
       const { data, error } = await supabaseClient
         .from("properties")
-        .select("*, property_photos(*)")
+        .select("*, property_photos(*), parent:properties!parent_id(title, id, phone_number)")
         .eq("id", propertyId)
         .single();
 
       if (error || !data) {
+        document.getElementById("prop-title").textContent = "Proprietà non trovata";
         messageEl.textContent = "Alloggio non trovato.";
-        titleEl.textContent = "Alloggio non disponibile";
         return;
       }
 
@@ -231,7 +235,11 @@
 
 
 
-      whatsappLink.href = `https://wa.me/393345071226?text=${encodeURIComponent(
+      const customPhone = property.phone_number || (property.parent && property.parent.phone_number);
+      const phone = customPhone || "+393345071226";
+      const cleanPhone = phone.replace(/[^0-9+]/g, "");
+
+      whatsappLink.href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
         `Ciao, vorrei informazioni sull'alloggio "${property.title}"`
       )}`;
 

@@ -309,9 +309,20 @@
             shortEl.textContent = property.short_description || "";
             fullEl.textContent = property.full_description || "";
 
-            whatsappLink.href = `https://wa.me/393345071226?text=${encodeURIComponent(
+            const phone = property.phone_number || "+393345071226";
+            const cleanPhone = phone.replace(/[^0-9+]/g, "");
+            whatsappLink.href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
                 `Ciao, vorrei informazioni sulla Guest House "${property.title}"`
             )}`;
+            // Also update the button text if different? The button is an icon usually. 
+            // In layout it is "Contattaci su WhatsApp". The text is generic.
+            // But we should probably update footer or contact info if present on page.
+            // guesthouse.html only has the floating action or header buttons?
+            // "Contattaci su WhatsApp" is usually in the hero or sticky bar.
+            // Let's check where `whatsappLink` comes from.
+            // It's `const whatsappLink = document.getElementById("whatsapp-link");` 
+            // I need to see where that element is to be sure.
+            // Assuming it's the main CTA.
 
             // Custom Booking Link handling
             const bookBtn = document.getElementById("book-gh-btn");
